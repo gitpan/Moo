@@ -1,0 +1,249 @@
+NAME
+    Moo - Minimalist Object Orientation (with Moose compatiblity)
+
+WARNING WARNING WARNING
+    This is a 0.9 release because we're fairly sure it works. For us. Until
+    it's tested in the wild, we make no guarantees it also works for you.
+
+    If this module does something unexpected, please submit a failing test.
+
+    But if it eats your cat, sleeps with your boyfriend, or pushes grandma
+    down the stairs to save her from the terrible secret of space, it's not
+    our fault.
+
+SYNOPSIS
+     package Cat::Food;
+
+     use Moo;
+     use Sub::Quote;
+
+     sub feed_lion {
+       my $self = shift;
+       my $amount = shift || 1;
+
+       $self->pounds( $self->pounds - $amount );
+     }
+
+     has taste => (
+       is => 'ro',
+     );
+
+     has brand => (
+       is  => 'ro',
+       isa => sub {
+         die "Only SWEET-TREATZ supported!" unless $_[0] eq 'SWEET-TREATZ'
+       },
+    );
+
+     has pounds => (
+       is  => 'rw',
+       isa => quote_sub q{ die "$_[0] is too much cat food!" unless $_[0] < 15 },
+     );
+
+     1;
+
+    and else where
+
+     my $full = Cat::Food->new(
+        taste  => 'DELICIOUS.',
+        brand  => 'SWEET-TREATZ',
+        pounds => 10,
+     );
+
+     $full->feed_lion;
+
+     say $full->pounds;
+
+DESCRIPTION
+    This module is an extremely light-weight, high-performance Moose
+    replacement. It also avoids depending on any XS modules to allow simple
+    deployments. The name "Moo" is based on the idea that it provides almost
+    -but not quite- two thirds of Moose.
+
+    Unlike "Mouse" this module does not aim at full Moose compatibility. See
+    "INCOMPATIBILITIES" for more details.
+
+IMPORTED METHODS
+  new
+     Foo::Bar->new( attr1 => 3 );
+
+    or
+
+     Foo::Bar->new({ attr1 => 3 });
+
+  BUILDARGS
+    This feature from Moose is not yet supported.
+
+  BUILDALL
+    Don't override (or probably even call) this method. Instead, you can
+    define a "BUILD" method on your class and the constructor will
+    automatically call the "BUILD" method from parent down to child after
+    the object has been instantiated. Typically this is used for object
+    validation or possibly logging.
+
+  does
+     if ($foo->does('Some::Role1')) {
+       ...
+     }
+
+    Returns true if the object composes in the passed role.
+
+IMPORTED SUBROUTINES
+  extends
+     extends 'Parent::Class';
+
+    Declares base class. Multiple superclasses can be passed for multiple
+    inheritance (but please use roles instead).
+
+    Calling extends more than once will REPLACE your superclasses, not add
+    to them like 'use base' would.
+
+  with
+     with 'Some::Role1';
+     with 'Some::Role2';
+
+    Composes a Role::Tiny into current class. Only one role may be composed
+    in at a time to allow the code to remain as simple as possible.
+
+  has
+     has attr => (
+       is => 'ro',
+     );
+
+    Declares an attribute for the class.
+
+    The options for "has" are as follows:
+
+    * is
+      required, must be "ro" or "rw". Unsurprisingly, "ro" generates an
+      accessor that will not respond to arguments; to be clear: a setter
+      only. "rw" will create a perlish getter/setter.
+
+    * isa
+      Takes a coderef which is meant to validate the attribute. Unlike Moose
+      Moo does not include a basic type system, so instead of doing "isa =>
+      'Num'", one should do
+
+       isa => quote_sub q{
+         die "$_[0] is not a number!" unless looks_like_number $_[0]
+       },
+
+      Sub::Quote aware
+
+    * coerce
+      This Moose feature is not yet supported
+
+    * trigger
+      Takes a coderef which will get called any time the attribute is set.
+      Coderef will be invoked against the object with the new value as an
+      argument.
+
+      Note that Moose also passes the old value, if any; this feature is not
+      yet supported.
+
+      Sub::Quote aware
+
+    * default
+      Takes a coderef which will get called with $self as its only argument
+      to populate an attribute if no value is supplied to the constructor -
+      or if the attribute is lazy, when the attribute is first retrieved if
+      no value has yet been provided.
+
+      Note that if your default is fired during new() there is no guarantee
+      that other attributes have been populated yet so you should not rely
+      on their existence.
+
+      Sub::Quote aware
+
+    * predicate
+      Takes a method name which will return true if an attribute has a
+      value.
+
+      A common example of this would be to call it "has_$foo", implying that
+      the object has a $foo set.
+
+    * builder
+      Takes a method name which will be called to create the attribute -
+      functions exactly like default except that instead of calling
+
+        $default->($self);
+
+      Moo will call
+
+        $self->$builder;
+
+    * clearer
+      Takes a method name which will clear the attribute.
+
+    * lazy
+      Boolean. Set this if you want values for the attribute to be grabbed
+      lazily. This is usually a good idea if you have a "builder" which
+      requires another attribute to be set.
+
+    * required
+      Boolean. Set this if the attribute must be passed on instantiation.
+
+    * weak_ref
+      Boolean. Set this if you want the reference that the attribute
+      contains to be weakened; use this when circular references are
+      possible, which will cause leaks.
+
+    * init_arg
+      Takes the name of the key to look for at instantiation time of the
+      object. A common use of this is to make an underscored attribute have
+      a non-underscored initialization name. "undef" means that passing the
+      value in on instantiation
+
+  before
+     before foo => sub { ... };
+
+    See "before method(s) => sub { ... }" in Class::Method::Modifiers for
+    full documentation.
+
+  around
+     around foo => sub { ... };
+
+    See "around method(s) => sub { ... }" in Class::Method::Modifiers for
+    full documentation.
+
+  after
+     after foo => sub { ... };
+
+    See "after method(s) => sub { ... }" in Class::Method::Modifiers for
+    full documentation.
+
+SUB QUOTE AWARE
+    "quote_sub" in Sub::Quote allows us to create coderefs that are
+    "inlineable," giving us a handy, XS-free speed boost. Any option that is
+    Sub::Quote aware can take advantage of this.
+
+INCOMPATIBILITIES WITH MOOSE
+    You can only compose one role at a time. If your application is large or
+    complex enough to warrant complex composition, you wanted Moose.
+
+    There is no complex type system. "isa" is verified with a coderef, if
+    you need complex types, just make a library of coderefs, or better yet,
+    functions that return quoted subs.
+
+    "initializer" is not supported in core since the author considers it to
+    be a bad idea but may be supported by an extension in future.
+
+    There is no meta object. If you need this level of complexity you wanted
+    Moose - Moo succeeds at being small because it explicitly does not
+    provide a metaprotocol.
+
+    No support for "super", "override", "inner", or "augment" - override can
+    be handled by around albeit with a little more typing, and the author
+    considers augment to be a bad idea.
+
+    "default" only supports coderefs, because doing otherwise is usually a
+    mistake anyway.
+
+    "lazy_build" is not supported per se, but of course it will work if you
+    manually set all the options it implies.
+
+    "auto_deref" is not supported since the author considers it a bad idea.
+
+    "documentation" is not supported since it's a very poor replacement for
+    POD.
+
