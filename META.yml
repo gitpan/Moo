@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Moo
-version:            0.009002
+version:            0.009003
 abstract:           Minimalist Object Orientation (with Moose compatiblity)
 author:
     - Matt S Trout <mst@shadowcat.co.uk>
@@ -13,12 +13,12 @@ build_requires:
     Test::More:   0.96
 requires:
     Class::Method::Modifiers:  1.05
-    strictures:           1
+    strictures:           1.001001
 no_index:
     directory:
         - t
         - inc
-generated_by:       ExtUtils::MakeMaker version 6.5707
+generated_by:       ExtUtils::MakeMaker version 6.56
 meta-spec:
     url:      http://module-build.sourceforge.net/META-spec-v1.4.html
     version:  1.4

@@ -28,6 +28,7 @@ t/accessor-trigger.t
 t/accessor-weaken.t
 t/buildall.t
 t/compose-roles.t
+t/load_module.t
 t/method-generate-accessor.t
 t/method-generate-constructor.t
 t/moo-accessors.t

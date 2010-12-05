@@ -3,7 +3,7 @@ package Moo;
 use strictures 1;
 use Moo::_Utils;
 
-our $VERSION = '0.009002';
+our $VERSION = '0.009003'; # 0.9.3
 $VERSION = eval $VERSION;
 
 our %MAKERS;
@@ -230,7 +230,7 @@ The options for C<has> are as follows:
 =item * is
 
 B<required>, must be C<ro> or C<rw>.  Unsurprisingly, C<ro> generates an
-accessor that will not respond to arguments; to be clear: a setter only. C<rw>
+accessor that will not respond to arguments; to be clear: a getter only. C<rw>
 will create a perlish getter/setter.
 
 =item * isa
