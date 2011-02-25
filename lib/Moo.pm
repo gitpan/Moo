@@ -3,7 +3,7 @@ package Moo;
 use strictures 1;
 use Moo::_Utils;
 
-our $VERSION = '0.009005'; # 0.9.5
+our $VERSION = '0.009006'; # 0.9.6
 $VERSION = eval $VERSION;
 
 our %MAKERS;
@@ -403,3 +403,31 @@ manually set all the options it implies.
 C<auto_deref> is not supported since the author considers it a bad idea.
 
 C<documentation> is not supported since it's a very poor replacement for POD.
+
+=head1 AUTHOR
+
+mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>
+
+=head1 CONTRIBUTORS
+
+dg - David Leadbeater (cpan:DGL) <dgl@dgl.cx>
+
+frew - Arthur Axel "fREW" Schmidt (cpan:FREW) <frioux@gmail.com>
+
+hobbs - Andrew Rodland (cpan:ARODLAND) <arodland@cpan.org>
+
+jnap - John Napiorkowski (cpan:JJNAPIORK) <jjn1056@yahoo.com>
+
+ribasushi - Peter Rabbitson (cpan:RIBASUSHI) <ribasushi@cpan.org>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2010-2011 the strictures L</AUTHOR> and L</CONTRIBUTORS>
+as listed above.
+
+=head1 LICENSE
+
+This library is free software and may be distributed under the same terms
+as perl itself.
+
+=cut

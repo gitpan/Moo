@@ -63,6 +63,25 @@ DESCRIPTION
     Unlike "Mouse" this module does not aim at full Moose compatibility. See
     "INCOMPATIBILITIES" for more details.
 
+WHY MOO EXISTS
+    If you want a full object system with a rich Metaprotocol, Moose is
+    already wonderful.
+
+    I've tried several times to use Mouse but it's 3x the size of Moo and
+    takes longer to load than most of my Moo based CGI scripts take to run.
+
+    If you don't want Moose, you don't want "less metaprotocol" like Mouse,
+    you want "as little as possible" - which means "no metaprotocol", which
+    is what Moo provides.
+
+    By Moo 1.0 I intend to have Moo's equivalent of Any::Moose built in - if
+    Moose gets loaded, any Moo class or role will act as a Moose equivalent
+    if treated as such.
+
+    Hence - Moo exists as its name - Minimal Object Orientation - with a
+    pledge to make it smooth to upgrade to Moose when you need more than
+    minimal features.
+
 IMPORTED METHODS
   new
      Foo::Bar->new( attr1 => 3 );
@@ -115,11 +134,13 @@ IMPORTED SUBROUTINES
     The options for "has" are as follows:
 
     * is
+
       required, must be "ro" or "rw". Unsurprisingly, "ro" generates an
-      accessor that will not respond to arguments; to be clear: a setter
+      accessor that will not respond to arguments; to be clear: a getter
       only. "rw" will create a perlish getter/setter.
 
     * isa
+
       Takes a coderef which is meant to validate the attribute. Unlike Moose
       Moo does not include a basic type system, so instead of doing "isa =>
       'Num'", one should do
@@ -131,9 +152,11 @@ IMPORTED SUBROUTINES
       Sub::Quote aware
 
     * coerce
+
       This Moose feature is not yet supported
 
     * trigger
+
       Takes a coderef which will get called any time the attribute is set.
       Coderef will be invoked against the object with the new value as an
       argument.
@@ -144,6 +167,7 @@ IMPORTED SUBROUTINES
       Sub::Quote aware
 
     * default
+
       Takes a coderef which will get called with $self as its only argument
       to populate an attribute if no value is supplied to the constructor -
       or if the attribute is lazy, when the attribute is first retrieved if
@@ -156,6 +180,7 @@ IMPORTED SUBROUTINES
       Sub::Quote aware
 
     * predicate
+
       Takes a method name which will return true if an attribute has a
       value.
 
@@ -163,6 +188,7 @@ IMPORTED SUBROUTINES
       the object has a $foo set.
 
     * builder
+
       Takes a method name which will be called to create the attribute -
       functions exactly like default except that instead of calling
 
@@ -173,22 +199,27 @@ IMPORTED SUBROUTINES
         $self->$builder;
 
     * clearer
+
       Takes a method name which will clear the attribute.
 
     * lazy
+
       Boolean. Set this if you want values for the attribute to be grabbed
       lazily. This is usually a good idea if you have a "builder" which
       requires another attribute to be set.
 
     * required
+
       Boolean. Set this if the attribute must be passed on instantiation.
 
     * weak_ref
+
       Boolean. Set this if you want the reference that the attribute
       contains to be weakened; use this when circular references are
       possible, which will cause leaks.
 
     * init_arg
+
       Takes the name of the key to look for at instantiation time of the
       object. A common use of this is to make an underscored attribute have
       a non-underscored initialization name. "undef" means that passing the
@@ -246,4 +277,26 @@ INCOMPATIBILITIES WITH MOOSE
 
     "documentation" is not supported since it's a very poor replacement for
     POD.
+
+AUTHOR
+    mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>
+
+CONTRIBUTORS
+    dg - David Leadbeater (cpan:DGL) <dgl@dgl.cx>
+
+    frew - Arthur Axel "fREW" Schmidt (cpan:FREW) <frioux@gmail.com>
+
+    hobbs - Andrew Rodland (cpan:ARODLAND) <arodland@cpan.org>
+
+    jnap - John Napiorkowski (cpan:JJNAPIORK) <jjn1056@yahoo.com>
+
+    ribasushi - Peter Rabbitson (cpan:RIBASUSHI) <ribasushi@cpan.org>
+
+COPYRIGHT
+    Copyright (c) 2010-2011 the strictures "AUTHOR" and "CONTRIBUTORS" as
+    listed above.
+
+LICENSE
+    This library is free software and may be distributed under the same
+    terms as perl itself.
 

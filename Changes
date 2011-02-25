@@ -1,3 +1,9 @@
+0.009006 - 2011-02-25
+  - handle non-lazy default and builder when init_arg is undef
+  - add copyright and license info for downstream packagers
+  - weak ref checking for Sub::Quote to avoid bugs on refaddr reuse
+  - Switch composed role names to be a valid package name
+
 0.9.5 Tue Jan 11 2011
   - Fix clobberage of runtime-installed wrappers by Sub::Defer
   - Fix nonMoo constructor firing through multiple layers of Moo
