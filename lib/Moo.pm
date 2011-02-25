@@ -3,7 +3,7 @@ package Moo;
 use strictures 1;
 use Moo::_Utils;
 
-our $VERSION = '0.009006'; # 0.9.6
+our $VERSION = '0.009007'; # 0.9.7
 $VERSION = eval $VERSION;
 
 our %MAKERS;
@@ -422,7 +422,7 @@ ribasushi - Peter Rabbitson (cpan:RIBASUSHI) <ribasushi@cpan.org>
 
 =head1 COPYRIGHT
 
-Copyright (c) 2010-2011 the strictures L</AUTHOR> and L</CONTRIBUTORS>
+Copyright (c) 2010-2011 the Moo L</AUTHOR> and L</CONTRIBUTORS>
 as listed above.
 
 =head1 LICENSE
