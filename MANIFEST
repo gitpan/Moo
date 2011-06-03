@@ -29,6 +29,7 @@ t/buildall.t
 t/compose-roles.t
 t/extends-non-moo.t
 t/load_module.t
+t/load_module_role_tiny.t
 t/method-generate-accessor.t
 t/method-generate-constructor.t
 t/moo-accessors.t

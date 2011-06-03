@@ -3,6 +3,13 @@ package Moo::_Utils;
 sub _getglob { \*{$_[0]} }
 sub _getstash { \%{"$_[0]::"} }
 
+BEGIN {
+  *lt_5_8_3 = $] < 5.008003
+    ? sub () { 1 }
+    : sub () { 0 }
+  ;
+}
+
 use strictures 1;
 use base qw(Exporter);
 
@@ -20,6 +27,8 @@ sub _install_modifier {
 }
 
 our %MAYBE_LOADED;
+
+# _load_module is inlined in Role::Tiny - make sure to copy if you update it.
 
 sub _load_module {
   (my $proto = $_[0]) =~ s/::/\//g;

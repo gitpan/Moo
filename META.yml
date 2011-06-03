@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Moo
-version:            0.009007
+version:            0.009008
 abstract:           Minimalist Object Orientation (with Moose compatiblity)
 author:
     - mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>
