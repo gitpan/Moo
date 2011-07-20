@@ -1,16 +1,6 @@
 NAME
     Moo - Minimalist Object Orientation (with Moose compatiblity)
 
-WARNING WARNING WARNING
-    This is a 0.9 release because we're fairly sure it works. For us. Until
-    it's tested in the wild, we make no guarantees it also works for you.
-
-    If this module does something unexpected, please submit a failing test.
-
-    But if it eats your cat, sleeps with your boyfriend, or pushes grandma
-    down the stairs to save her from the terrible secret of space, it's not
-    our fault.
-
 SYNOPSIS
      package Cat::Food;
 
@@ -153,7 +143,16 @@ IMPORTED SUBROUTINES
 
     * coerce
 
-      This Moose feature is not yet supported
+      Takes a coderef which is meant to coerce the attribute. The basic idea
+      is to do something like the following:
+
+       coerce => quote_sub q{
+         $_[0] + 1 unless $_[0] % 2
+       },
+
+      Coerce does not require "isa" to be defined.
+
+      Sub::Quote aware
 
     * trigger
 
@@ -291,6 +290,8 @@ CONTRIBUTORS
     jnap - John Napiorkowski (cpan:JJNAPIORK) <jjn1056@yahoo.com>
 
     ribasushi - Peter Rabbitson (cpan:RIBASUSHI) <ribasushi@cpan.org>
+
+    chip - Chip Salzenberg (cpan:CHIPS) <chip@pobox.com>
 
 COPYRIGHT
     Copyright (c) 2010-2011 the Moo "AUTHOR" and "CONTRIBUTORS" as listed

@@ -7,6 +7,8 @@ use Sub::Quote;
 use B 'perlstring';
 BEGIN {
   our $CAN_HAZ_XS =
+    !$ENV{MOO_XS_DISABLE}
+      &&
     _maybe_load_module('Class::XSAccessor')
       &&
     (Class::XSAccessor->VERSION > 1.06)
@@ -38,7 +40,8 @@ sub generate_method {
       $self->{captures} = {};
       $methods{$reader} =
         quote_sub "${into}::${reader}"
-          => $self->_generate_get($name, $spec)
+          => '    die "'.$reader.' is a read-only accessor" if @_ > 1;'."\n"
+             .$self->_generate_get($name, $spec)
           => delete $self->{captures}
         ;
     }
@@ -130,7 +133,7 @@ sub is_simple_attribute {
   # clearer doesn't have to be listed because it doesn't
   # affect whether defined/exists makes a difference
   !grep $spec->{$_},
-    qw(lazy default builder isa trigger predicate weak_ref);
+    qw(lazy default builder coerce isa trigger predicate weak_ref);
 }
 
 sub is_simple_get {
@@ -140,7 +143,7 @@ sub is_simple_get {
 
 sub is_simple_set {
   my ($self, $name, $spec) = @_;
-  !grep $spec->{$_}, qw(isa trigger weak_ref);
+  !grep $spec->{$_}, qw(coerce isa trigger weak_ref);
 }
 
 sub has_eager_default {
@@ -203,9 +206,14 @@ sub _generate_set {
   if ($self->is_simple_set($name, $spec)) {
     $self->_generate_simple_set('$_[0]', $name, $spec, '$_[1]');
   } else {
-    my ($trigger, $isa_check) = @{$spec}{qw(trigger isa)};
+    my ($coerce, $trigger, $isa_check) = @{$spec}{qw(coerce trigger isa)};
     my $simple = $self->_generate_simple_set('$self', $name, $spec, '$value');
     my $code = "do { my (\$self, \$value) = \@_;\n";
+    if ($coerce) {
+      $code .=
+        "        \$value = "
+        .$self->_generate_coerce($name, '$self', '$value', $coerce).";\n";
+    }
     if ($isa_check) {
       $code .= 
         "        ".$self->_generate_isa_check($name, '$value', $isa_check).";\n";
@@ -222,7 +230,19 @@ sub _generate_set {
     $code;
   }
 }
-  
+
+sub generate_coerce {
+  my $self = shift;
+  $self->{captures} = {};
+  my $code = $self->_generate_coerce(@_);
+  ($code, delete $self->{captures});
+}
+
+sub _generate_coerce {
+  my ($self, $name, $obj, $value, $coerce) = @_;
+  $self->_generate_call_code($name, 'coerce', "${value}", $coerce);
+}
+ 
 sub generate_trigger {
   my $self = shift;
   $self->{captures} = {};
@@ -288,6 +308,12 @@ sub _generate_populate_set {
             .$get_default
             ."\n${get_indent})"
         : $get_default;
+    if ( $spec->{coerce} ) {
+        $get_value = $self->_generate_coerce(
+            $name, $me, $get_value,
+            $spec->{coerce}
+          )
+    }
     ($spec->{isa}
       ? "    {\n      my \$value = ".$get_value.";\n      "
         .$self->_generate_isa_check(
@@ -307,6 +333,14 @@ sub _generate_populate_set {
     );
   } else {
     "    if (${test}) {\n"
+      .($spec->{coerce}
+        ? "      $source = "
+          .$self->_generate_coerce(
+            $name, $me, $source,
+            $spec->{coerce}
+          ).";\n"
+        : ""
+      )
       .($spec->{isa}
         ? "      "
           .$self->_generate_isa_check(

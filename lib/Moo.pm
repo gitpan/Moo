@@ -2,8 +2,9 @@ package Moo;
 
 use strictures 1;
 use Moo::_Utils;
+use B 'perlstring';
 
-our $VERSION = '0.009008'; # 0.9.8
+our $VERSION = '0.009009'; # 0.9.9
 $VERSION = eval $VERSION;
 
 our %MAKERS;
@@ -85,7 +86,10 @@ sub _constructor_maker_for {
           $moo_constructor
             ? ($con ? $con->construction_string : undef)
             : ('$class->'.$target.'::SUPER::new(@_)')
-        )
+        ),
+        subconstructor_generator => (
+          $class.'->_constructor_maker_for($class,'.perlstring($target).')'
+        ),
       )
       ->install_delayed
       ->register_attribute_specs(%{$con?$con->all_attribute_specs:{}})
@@ -97,16 +101,6 @@ sub _constructor_maker_for {
 =head1 NAME
 
 Moo - Minimalist Object Orientation (with Moose compatiblity)
-
-=head1 WARNING WARNING WARNING
-
-This is a 0.9 release because we're fairly sure it works. For us. Until it's
-tested in the wild, we make no guarantees it also works for you.
-
-If this module does something unexpected, please submit a failing test.
-
-But if it eats your cat, sleeps with your boyfriend, or pushes grandma down
-the stairs to save her from the terrible secret of space, it's not our fault.
 
 =head1 SYNOPSIS
 
@@ -263,10 +257,6 @@ L<Sub::Quote aware|/SUB QUOTE AWARE>
 
 =item * coerce
 
-This Moose feature is not yet supported
-
-=begin hide
-
 Takes a coderef which is meant to coerce the attribute.  The basic idea is to
 do something like the following:
 
@@ -274,9 +264,9 @@ do something like the following:
    $_[0] + 1 unless $_[0] % 2
  },
 
-L<Sub::Quote aware|/SUB QUOTE AWARE>
+Coerce does not require C<isa> to be defined.
 
-=end hide
+L<Sub::Quote aware|/SUB QUOTE AWARE>
 
 =item * trigger
 
@@ -419,6 +409,8 @@ hobbs - Andrew Rodland (cpan:ARODLAND) <arodland@cpan.org>
 jnap - John Napiorkowski (cpan:JJNAPIORK) <jjn1056@yahoo.com>
 
 ribasushi - Peter Rabbitson (cpan:RIBASUSHI) <ribasushi@cpan.org>
+
+chip - Chip Salzenberg (cpan:CHIPS) <chip@pobox.com>
 
 =head1 COPYRIGHT
 

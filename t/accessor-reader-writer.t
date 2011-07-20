@@ -1,5 +1,6 @@
 use strictures 1;
 use Test::More;
+use Test::Fatal;
 
 my @result;
 
@@ -32,6 +33,8 @@ my $bar = Bar->new(two => '...');
 is( $foo->get_one, 'lol', 'reader works' );
 $foo->set_one('rofl');
 is( $foo->get_one, 'rofl', 'writer works' );
+
+ok( exception { $foo->get_one('blah') }, 'reader dies on write' );
 
 is( $bar->TWO, '...', 'accessor works for reading' );
 $bar->TWO('!!!');
