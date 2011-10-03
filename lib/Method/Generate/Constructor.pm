@@ -44,17 +44,26 @@ sub generate_method {
   local $self->{captures} = {};
   my $body = '    my $class = shift;'."\n";
   $body .= $self->_handle_subconstructor($into, $name);
-  $body .= $self->_generate_args;
+  my $into_buildargs = $into->can('BUILDARGS');
+  if ( $into_buildargs && $into_buildargs != \&Moo::Object::BUILDARGS ) {
+      $body .= $self->_generate_args_via_buildargs;
+  } else {
+      $body .= $self->_generate_args;
+  }
   $body .= $self->_check_required($spec);
   $body .= '    my $new = '.$self->construction_string.";\n";
   $body .= $self->_assign_new($spec);
   if ($into->can('BUILD')) {
-    require Method::Generate::BuildAll;
+    { local $@; require Method::Generate::BuildAll; }
     $body .= Method::Generate::BuildAll->new->buildall_body_for(
       $into, '$new', '$args'
     );
   }
   $body .= '    return $new;'."\n";
+  if ($into->can('DEMOLISH')) {
+    { local $@; require Method::Generate::DemolishAll; }
+    Method::Generate::DemolishAll->new->generate_method($into);
+  }
   quote_sub
     "${into}::${name}" => $body,
     $self->{captures}, $quote_opts||{}
@@ -79,9 +88,32 @@ sub _cap_call {
   $code;
 }
 
+sub _generate_args_via_buildargs {
+  my ($self) = @_;
+  q{    my $args = $class->BUILDARGS(@_);}."\n";
+}
+
+# inlined from Moo::Object - update that first.
 sub _generate_args {
   my ($self) = @_;
-  q{    my $args = ref($_[0]) eq 'HASH' ? $_[0] : { @_ };}."\n";
+  return <<'_EOA';
+    my $args;
+    if ( scalar @_ == 1 ) {
+        unless ( defined $_[0] && ref $_[0] eq 'HASH' ) {
+            die "Single parameters to new() must be a HASH ref"
+                ." data => ". $_[0] ."\n";
+        }
+        $args = { %{ $_[0] } };
+    }
+    elsif ( @_ % 2 ) {
+        die "The new() method for $class expects a hash reference or a key/value list."
+                . " You passed an odd number of arguments\n";
+    }
+    else {
+        $args = {@_};
+    }
+_EOA
+
 }
 
 sub _assign_new {

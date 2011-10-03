@@ -2,6 +2,7 @@ Changes
 lib/Method/Generate/Accessor.pm
 lib/Method/Generate/BuildAll.pm
 lib/Method/Generate/Constructor.pm
+lib/Method/Generate/DemolishAll.pm
 lib/Method/Inliner.pm
 lib/Moo.pm
 lib/Moo/_mro.pm
@@ -27,8 +28,14 @@ t/accessor-reader-writer.t
 t/accessor-roles.t
 t/accessor-trigger.t
 t/accessor-weaken.t
+t/buildall-subconstructor.t
 t/buildall.t
+t/buildargs.t
 t/compose-roles.t
+t/demolish-basics.t
+t/demolish-bugs-eats_exceptions.t
+t/demolish-bugs-eats_mini.t
+t/demolish-global_destruction.t
 t/extends-non-moo.t
 t/load_module.t
 t/load_module_role_tiny.t
@@ -40,5 +47,6 @@ t/role-tiny-with.t
 t/role-tiny.t
 t/sub-defer.t
 t/sub-quote.t
-META.yml                                 Module meta-data (added by MakeMaker)
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)
 README                                   README file (added by Distar)

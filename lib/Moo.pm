@@ -4,7 +4,7 @@ use strictures 1;
 use Moo::_Utils;
 use B 'perlstring';
 
-our $VERSION = '0.009010'; # 0.9.10
+our $VERSION = '0.009011'; # 0.9.11
 $VERSION = eval $VERSION;
 
 our %MAKERS;
@@ -20,7 +20,7 @@ sub import {
     @{*{_getglob("${target}::ISA")}{ARRAY}} = @_;
   };
   *{_getglob("${target}::with")} = sub {
-    require Moo::Role;
+    { local $@; require Moo::Role; }
     die "Only one role supported at a time by with" if @_ > 1;
     Moo::Role->apply_role_to_package($target, $_[0]);
   };
@@ -28,7 +28,7 @@ sub import {
   *{_getglob("${target}::has")} = sub {
     my ($name, %spec) = @_;
     ($MAKERS{$target}{accessor} ||= do {
-      require Method::Generate::Accessor;
+      { local $@; require Method::Generate::Accessor; }
       Method::Generate::Accessor->new
     })->generate_method($target, $name, \%spec);
     $class->_constructor_maker_for($target)
@@ -36,14 +36,14 @@ sub import {
   };
   foreach my $type (qw(before after around)) {
     *{_getglob "${target}::${type}"} = sub {
-      require Class::Method::Modifiers;
+      { local $@; require Class::Method::Modifiers; }
       _install_modifier($target, $type, @_);
     };
   }
   {
     no strict 'refs';
     @{"${target}::ISA"} = do {
-      require Moo::Object; ('Moo::Object');
+      {; local $@; require Moo::Object; } ('Moo::Object');
     } unless @{"${target}::ISA"};
   }
 }
@@ -52,8 +52,11 @@ sub _constructor_maker_for {
   my ($class, $target, $select_super) = @_;
   return unless $MAKERS{$target};
   $MAKERS{$target}{constructor} ||= do {
-    require Method::Generate::Constructor;
-    require Sub::Defer;
+    {
+      local $@;
+      require Method::Generate::Constructor;
+      require Sub::Defer;
+    }
     my ($moo_constructor, $con);
 
     if ($select_super && $MAKERS{$select_super}) {
@@ -79,7 +82,7 @@ sub _constructor_maker_for {
       ->new(
         package => $target,
         accessor_generator => do {
-          require Method::Generate::Accessor;
+          { local $@; require Method::Generate::Accessor; }
           Method::Generate::Accessor->new;
         },
         construction_string => (
@@ -97,6 +100,9 @@ sub _constructor_maker_for {
 }
 
 1;
+=pod
+
+=encoding utf-8
 
 =head1 NAME
 
@@ -188,7 +194,25 @@ or
 
 =head2 BUILDARGS
 
-This feature from Moose is not yet supported.
+ around BUILDARGS => sub {
+   my $orig = shift;
+   my ( $class, @args ) = @_;
+
+   unshift @args, "attr1" if @args % 2 == 1;
+
+   return $class->$orig(@args);
+ };
+
+ Foo::Bar->new( 3 );
+
+The default implementation of this method accepts a hash or hash reference of
+named parameters. If it receives a single argument that isn't a hash reference
+it throws an error.
+
+You can override this method in your class to handle other types of options
+passed to the constructor.
+
+This method should always return a hash reference of named options.
 
 =head2 BUILDALL
 
@@ -196,6 +220,17 @@ Don't override (or probably even call) this method.  Instead, you can define
 a C<BUILD> method on your class and the constructor will automatically call the
 C<BUILD> method from parent down to child after the object has been
 instantiated.  Typically this is used for object validation or possibly logging.
+
+=head2 DESTROY
+
+If you have a C<DEMOLISH> method anywhere in your inheritance hierarchy,
+a C<DESTROY> method is created on first object construction which will call
+C<< $instance->DEMOLISH($in_global_destruction) >> for each C<DEMOLISH>
+method from child upwards to parents.
+
+Note that the C<DESTROY> method is created on first construction of an object
+of your class in order to not add overhead to classes without C<DEMOLISH>
+methods; this may prove slightly surprising if you try and define your own.
 
 =head2 does
 
@@ -323,6 +358,18 @@ another attribute to be set.
 
 B<Boolean>.  Set this if the attribute must be passed on instantiation.
 
+=item * reader
+
+The value of this attribute will be the name of the method to get the value of
+the attribute.  If you like Java style methods, you might set this to
+C<get_foo>
+
+=item * writer
+
+The value of this attribute will be the name of the method to set the value of
+the attribute.  If you like Java style methods, you might set this to
+C<set_foo>
+
 =item * weak_ref
 
 B<Boolean>.  Set this if you want the reference that the attribute contains to
@@ -411,6 +458,8 @@ jnap - John Napiorkowski (cpan:JJNAPIORK) <jjn1056@yahoo.com>
 ribasushi - Peter Rabbitson (cpan:RIBASUSHI) <ribasushi@cpan.org>
 
 chip - Chip Salzenberg (cpan:CHIPS) <chip@pobox.com>
+
+ajgb - Alex J. G. Burzyński (cpan:AJGB) <ajgb@cpan.org>
 
 =head1 COPYRIGHT
 

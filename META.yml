@@ -1,24 +1,24 @@
---- #YAML:1.0
-name:               Moo
-version:            0.009010
-abstract:           Minimalist Object Orientation (with Moose compatiblity)
+---
+abstract: 'Minimalist Object Orientation (with Moose compatiblity)'
 author:
-    - mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>
-license:            perl
-distribution_type:  module
-configure_requires:
-    ExtUtils::MakeMaker:  0
+  - 'mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>'
 build_requires:
-    Test::Fatal:  0.003
-    Test::More:   0.96
-requires:
-    Class::Method::Modifiers:  1.05
-    strictures:           1.001001
-no_index:
-    directory:
-        - t
-        - inc
-generated_by:       ExtUtils::MakeMaker version 6.56
+  Test::Fatal: 0.003
+  Test::More: 0.96
+configure_requires:
+  ExtUtils::MakeMaker: 0
+dynamic_config: 1
+generated_by: 'ExtUtils::MakeMaker version 6.59, CPAN::Meta::Converter version 2.112150'
+license: perl
 meta-spec:
-    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
-    version:  1.4
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Moo
+no_index:
+  directory:
+    - t
+    - inc
+requires:
+  Class::Method::Modifiers: 1.05
+  strictures: 1.001001
+version: 0.009011

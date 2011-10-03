@@ -81,7 +81,25 @@ IMPORTED METHODS
      Foo::Bar->new({ attr1 => 3 });
 
   BUILDARGS
-    This feature from Moose is not yet supported.
+     around BUILDARGS => sub {
+       my $orig = shift;
+       my ( $class, @args ) = @_;
+
+       unshift @args, "attr1" if @args % 2 == 1;
+
+       return $class->$orig(@args);
+     };
+
+     Foo::Bar->new( 3 );
+
+    The default implementation of this method accepts a hash or hash
+    reference of named parameters. If it receives a single argument that
+    isn't a hash reference it throws an error.
+
+    You can override this method in your class to handle other types of
+    options passed to the constructor.
+
+    This method should always return a hash reference of named options.
 
   BUILDALL
     Don't override (or probably even call) this method. Instead, you can
@@ -89,6 +107,17 @@ IMPORTED METHODS
     automatically call the "BUILD" method from parent down to child after
     the object has been instantiated. Typically this is used for object
     validation or possibly logging.
+
+  DESTROY
+    If you have a "DEMOLISH" method anywhere in your inheritance hierarchy,
+    a "DESTROY" method is created on first object construction which will
+    call "$instance->DEMOLISH($in_global_destruction)" for each "DEMOLISH"
+    method from child upwards to parents.
+
+    Note that the "DESTROY" method is created on first construction of an
+    object of your class in order to not add overhead to classes without
+    "DEMOLISH" methods; this may prove slightly surprising if you try and
+    define your own.
 
   does
      if ($foo->does('Some::Role1')) {
@@ -211,6 +240,18 @@ IMPORTED SUBROUTINES
 
       Boolean. Set this if the attribute must be passed on instantiation.
 
+    * reader
+
+      The value of this attribute will be the name of the method to get the
+      value of the attribute. If you like Java style methods, you might set
+      this to "get_foo"
+
+    * writer
+
+      The value of this attribute will be the name of the method to set the
+      value of the attribute. If you like Java style methods, you might set
+      this to "set_foo"
+
     * weak_ref
 
       Boolean. Set this if you want the reference that the attribute
@@ -292,6 +333,8 @@ CONTRIBUTORS
     ribasushi - Peter Rabbitson (cpan:RIBASUSHI) <ribasushi@cpan.org>
 
     chip - Chip Salzenberg (cpan:CHIPS) <chip@pobox.com>
+
+    ajgb - Alex J. G. Burzyński (cpan:AJGB) <ajgb@cpan.org>
 
 COPYRIGHT
     Copyright (c) 2010-2011 the Moo "AUTHOR" and "CONTRIBUTORS" as listed

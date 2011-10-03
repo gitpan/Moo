@@ -12,14 +12,18 @@ BEGIN {
 
 use strictures 1;
 use base qw(Exporter);
+use Moo::_mro;
 
-our @EXPORT = qw(_getglob _install_modifier _load_module _maybe_load_module);
+our @EXPORT = qw(
+    _getglob _install_modifier _load_module _maybe_load_module
+    _get_linear_isa
+);
 
 sub _install_modifier {
   my ($into, $type, $name, $code) = @_;
 
   if (my $to_modify = $into->can($name)) { # CMM will throw for us if not
-    require Sub::Defer;
+    { local $@; require Sub::Defer; }
     Sub::Defer::undefer_sub($to_modify);
   }
 
@@ -36,13 +40,14 @@ sub _load_module {
   # can't just ->can('can') because a sub-package Foo::Bar::Baz
   # creates a 'Baz::' key in Foo::Bar's symbol table
   return 1 if grep !/::$/, keys %{_getstash($_[0])||{}};
-  require "${proto}.pm";
+  { local $@; require "${proto}.pm"; }
   return 1;
 }
 
 sub _maybe_load_module {
   return $MAYBE_LOADED{$_[0]} if exists $MAYBE_LOADED{$_[0]};
   (my $proto = $_[0]) =~ s/::/\//g;
+  local $@;
   if (eval { require "${proto}.pm"; 1 }) {
     $MAYBE_LOADED{$_[0]} = 1;
   } else {
@@ -52,6 +57,29 @@ sub _maybe_load_module {
     $MAYBE_LOADED{$_[0]} = 0;
   }
   return $MAYBE_LOADED{$_[0]};
+}
+
+sub _get_linear_isa {
+    return mro::get_linear_isa($_[0]);
+}
+
+our $_in_global_destruction = 0;
+END { $_in_global_destruction = 1 }
+
+sub STANDARD_DESTROY {
+  my $self = shift;
+
+  my $e = do {
+    local $?;
+    local $@;
+    eval {
+      $self->DEMOLISHALL($_in_global_destruction);
+    };
+    $@;
+  };
+
+  no warnings 'misc';
+  die $e if $e; # rethrow
 }
 
 1;
