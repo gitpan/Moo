@@ -4,7 +4,7 @@ use strictures 1;
 use Moo::_Utils;
 use B 'perlstring';
 
-our $VERSION = '0.009011'; # 0.9.11
+our $VERSION = '0.009012'; # 0.9.12
 $VERSION = eval $VERSION;
 
 our %MAKERS;
@@ -460,6 +460,8 @@ ribasushi - Peter Rabbitson (cpan:RIBASUSHI) <ribasushi@cpan.org>
 chip - Chip Salzenberg (cpan:CHIPS) <chip@pobox.com>
 
 ajgb - Alex J. G. Burzyński (cpan:AJGB) <ajgb@cpan.org>
+
+doy - Jesse Luehrs (cpan:DOY) <doy at tozt dot net>
 
 =head1 COPYRIGHT
 

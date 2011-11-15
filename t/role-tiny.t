@@ -19,6 +19,10 @@ BEGIN {
 BEGIN {
   package MyClass;
 
+  use constant SIMPLE => 'simple';
+  use constant REF_CONST => [ 'ref_const' ];
+  use constant VSTRING_CONST => v1;
+
   sub req1 { }
   sub req2 { }
   sub foo { 'class foo' }

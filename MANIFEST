@@ -37,6 +37,7 @@ t/demolish-bugs-eats_exceptions.t
 t/demolish-bugs-eats_mini.t
 t/demolish-global_destruction.t
 t/extends-non-moo.t
+t/global-destruction-helper.pl
 t/load_module.t
 t/load_module_role_tiny.t
 t/method-generate-accessor.t
