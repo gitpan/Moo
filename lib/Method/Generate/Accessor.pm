@@ -11,7 +11,7 @@ BEGIN {
       &&
     _maybe_load_module('Class::XSAccessor')
       &&
-    (Class::XSAccessor->VERSION > 1.06)
+    (eval { Class::XSAccessor->VERSION('1.07') })
   ;
 }
 
@@ -387,7 +387,7 @@ sub _generate_simple_set {
 
       eval { Scalar::Util::weaken($simple); 1 } or do {
         if( \$@ =~ /Modification of a read-only value attempted/) {
-          { local $@; require Carp; }
+          { local \$@; require Carp; }
           Carp::croak( sprintf (
             'Reference to readonly value in "%s" can not be weakened on Perl < 5.8.3',
             $name_str,

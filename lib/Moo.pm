@@ -4,7 +4,7 @@ use strictures 1;
 use Moo::_Utils;
 use B 'perlstring';
 
-our $VERSION = '0.009012'; # 0.9.12
+our $VERSION = '0.009013'; # 0.9.13
 $VERSION = eval $VERSION;
 
 our %MAKERS;
@@ -43,7 +43,7 @@ sub import {
   {
     no strict 'refs';
     @{"${target}::ISA"} = do {
-      {; local $@; require Moo::Object; } ('Moo::Object');
+      { local $@; require Moo::Object; } ('Moo::Object');
     } unless @{"${target}::ISA"};
   }
 }
@@ -214,14 +214,14 @@ passed to the constructor.
 
 This method should always return a hash reference of named options.
 
-=head2 BUILDALL
+=head2 BUILD
 
-Don't override (or probably even call) this method.  Instead, you can define
-a C<BUILD> method on your class and the constructor will automatically call the
-C<BUILD> method from parent down to child after the object has been
-instantiated.  Typically this is used for object validation or possibly logging.
+Define a C<BUILD> method on your class and the constructor will automatically
+call the C<BUILD> method from parent down to child after the object has
+been instantiated.  Typically this is used for object validation or possibly
+logging.
 
-=head2 DESTROY
+=head2 DEMOLISH
 
 If you have a C<DEMOLISH> method anywhere in your inheritance hierarchy,
 a C<DESTROY> method is created on first object construction which will call
@@ -302,6 +302,25 @@ do something like the following:
 Coerce does not require C<isa> to be defined.
 
 L<Sub::Quote aware|/SUB QUOTE AWARE>
+
+=item * handles
+
+Takes a string
+
+  handles => 'RobotRole'
+
+Where C<RobotRole> is a role (L<Moo::Role>) that defines an interface which
+becomes the list of methods to handle.
+
+Takes a list of methods
+
+ handles => [ qw( one two ) ]
+
+Takes a hashref
+
+ handles => {
+   un => 'one',
+ }
 
 =item * trigger
 
@@ -440,6 +459,27 @@ manually set all the options it implies.
 C<auto_deref> is not supported since the author considers it a bad idea.
 
 C<documentation> is not supported since it's a very poor replacement for POD.
+
+Handling of warnings: when you C<use Moo> we enable FATAL warnings.  The nearest
+similar invocation for L<Moose> would be:
+
+  use Moose;
+  use warnings FATAL => "all";
+
+Additionally, L<Moo> supports a set of attribute option shortcuts intended to
+reduce common boilerplate.  The set of shortcuts is the same as in the L<Moose>
+module L<MooseX::AttributeShortcuts>.  So if you:
+
+    package MyClass;
+    use Moo;
+
+The nearest L<Moose> invocation would be:
+
+    package MyClass;
+
+    use Moose;
+    use warnings FATAL => "all";
+    use MooseX::AttributeShortcuts;
 
 =head1 AUTHOR
 

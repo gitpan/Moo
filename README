@@ -101,14 +101,13 @@ IMPORTED METHODS
 
     This method should always return a hash reference of named options.
 
-  BUILDALL
-    Don't override (or probably even call) this method. Instead, you can
-    define a "BUILD" method on your class and the constructor will
+  BUILD
+    Define a "BUILD" method on your class and the constructor will
     automatically call the "BUILD" method from parent down to child after
     the object has been instantiated. Typically this is used for object
     validation or possibly logging.
 
-  DESTROY
+  DEMOLISH
     If you have a "DEMOLISH" method anywhere in your inheritance hierarchy,
     a "DESTROY" method is created on first object construction which will
     call "$instance->DEMOLISH($in_global_destruction)" for each "DEMOLISH"
@@ -182,6 +181,25 @@ IMPORTED SUBROUTINES
       Coerce does not require "isa" to be defined.
 
       Sub::Quote aware
+
+    * handles
+
+      Takes a string
+
+        handles => 'RobotRole'
+
+      Where "RobotRole" is a role (Moo::Role) that defines an interface
+      which becomes the list of methods to handle.
+
+      Takes a list of methods
+
+       handles => [ qw( one two ) ]
+
+      Takes a hashref
+
+       handles => {
+         un => 'one',
+       }
 
     * trigger
 
@@ -317,6 +335,27 @@ INCOMPATIBILITIES WITH MOOSE
 
     "documentation" is not supported since it's a very poor replacement for
     POD.
+
+    Handling of warnings: when you "use Moo" we enable FATAL warnings. The
+    nearest similar invocation for Moose would be:
+
+      use Moose;
+      use warnings FATAL => "all";
+
+    Additionally, Moo supports a set of attribute option shortcuts intended
+    to reduce common boilerplate. The set of shortcuts is the same as in the
+    Moose module MooseX::AttributeShortcuts. So if you:
+
+        package MyClass;
+        use Moo;
+
+    The nearest Moose invocation would be:
+
+        package MyClass;
+
+        use Moose;
+        use warnings FATAL => "all";
+        use MooseX::AttributeShortcuts;
 
 AUTHOR
     mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>
