@@ -4,7 +4,7 @@ use strictures 1;
 use Moo::_Utils;
 use B 'perlstring';
 
-our $VERSION = '0.009013'; # 0.9.13
+our $VERSION = '0.009014'; # 0.9.13
 $VERSION = eval $VERSION;
 
 our %MAKERS;
@@ -20,7 +20,7 @@ sub import {
     @{*{_getglob("${target}::ISA")}{ARRAY}} = @_;
   };
   *{_getglob("${target}::with")} = sub {
-    { local $@; require Moo::Role; }
+    require Moo::Role;
     die "Only one role supported at a time by with" if @_ > 1;
     Moo::Role->apply_role_to_package($target, $_[0]);
   };
@@ -28,7 +28,7 @@ sub import {
   *{_getglob("${target}::has")} = sub {
     my ($name, %spec) = @_;
     ($MAKERS{$target}{accessor} ||= do {
-      { local $@; require Method::Generate::Accessor; }
+      require Method::Generate::Accessor;
       Method::Generate::Accessor->new
     })->generate_method($target, $name, \%spec);
     $class->_constructor_maker_for($target)
@@ -36,14 +36,14 @@ sub import {
   };
   foreach my $type (qw(before after around)) {
     *{_getglob "${target}::${type}"} = sub {
-      { local $@; require Class::Method::Modifiers; }
+      require Class::Method::Modifiers;
       _install_modifier($target, $type, @_);
     };
   }
   {
     no strict 'refs';
     @{"${target}::ISA"} = do {
-      { local $@; require Moo::Object; } ('Moo::Object');
+      require Moo::Object; ('Moo::Object');
     } unless @{"${target}::ISA"};
   }
 }
@@ -52,11 +52,8 @@ sub _constructor_maker_for {
   my ($class, $target, $select_super) = @_;
   return unless $MAKERS{$target};
   $MAKERS{$target}{constructor} ||= do {
-    {
-      local $@;
-      require Method::Generate::Constructor;
-      require Sub::Defer;
-    }
+    require Method::Generate::Constructor;
+    require Sub::Defer;
     my ($moo_constructor, $con);
 
     if ($select_super && $MAKERS{$select_super}) {
@@ -82,7 +79,7 @@ sub _constructor_maker_for {
       ->new(
         package => $target,
         accessor_generator => do {
-          { local $@; require Method::Generate::Accessor; }
+          require Method::Generate::Accessor;
           Method::Generate::Accessor->new;
         },
         construction_string => (
@@ -433,11 +430,28 @@ aware can take advantage of this.
 =head1 INCOMPATIBILITIES WITH MOOSE
 
 You can only compose one role at a time.  If your application is large or
-complex enough to warrant complex composition, you wanted L<Moose>.
+complex enough to warrant complex composition, you wanted L<Moose>.  Note that
+this does not mean you can only compose one role per class -
 
-There is no complex type system.  C<isa> is verified with a coderef, if you
+  with 'FirstRole';
+  with 'SecondRole';
+
+is absolutely fine, there's just currently no equivalent of Moose's
+
+  with 'FirstRole', 'SecondRole';
+
+which composes the two roles together, and then applies them.
+
+There is no built in type system.  C<isa> is verified with a coderef, if you
 need complex types, just make a library of coderefs, or better yet, functions
-that return quoted subs.
+that return quoted subs. L<MooX::Types::MooseLike> provides a similar API
+to L<MooseX::Types::Moose> so that you can write
+
+  has days_to_live => (is => 'ro', isa => Int);
+
+and have it work with both; it is hoped that providing only subrefs as an
+API will encourage the use of other type systems as well, since it's
+probably the weakest part of Moose design-wise.
 
 C<initializer> is not supported in core since the author considers it to be a
 bad idea but may be supported by an extension in future.
@@ -449,6 +463,10 @@ provide a metaprotocol.
 No support for C<super>, C<override>, C<inner>, or C<augment> - override can
 be handled by around albeit with a little more typing, and the author considers
 augment to be a bad idea.
+
+The C<dump> method is not provided by default. The author suggests loading 
+L<Devel::Dwarn> into C<main::> (via C<perl -MDevel::Dwarn ...> for example) and
+using C<$obj-E<gt>$::Dwarn()> instead.
 
 L</default> only supports coderefs, because doing otherwise is usually a
 mistake anyway.
@@ -481,6 +499,23 @@ The nearest L<Moose> invocation would be:
     use warnings FATAL => "all";
     use MooseX::AttributeShortcuts;
 
+or, if you're inheriting from a non-Moose class,
+
+    package MyClass;
+
+    use Moose;
+    use MooseX::NonMoose;
+    use warnings FATAL => "all";
+    use MooseX::AttributeShortcuts;
+
+Finally, Moose requires you to call
+
+    __PACKAGE__->meta->make_immutable;
+
+at the end of your class to get an inlined (i.e. not horribly slow)
+constructor. Moo does it automatically the first time ->new is called
+on your class.
+
 =head1 AUTHOR
 
 mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>
@@ -502,6 +537,8 @@ chip - Chip Salzenberg (cpan:CHIPS) <chip@pobox.com>
 ajgb - Alex J. G. Burzyński (cpan:AJGB) <ajgb@cpan.org>
 
 doy - Jesse Luehrs (cpan:DOY) <doy at tozt dot net>
+
+perigrin - Chris Prather (cpan:PERIGRIN) <chris@prather.org>
 
 =head1 COPYRIGHT
 

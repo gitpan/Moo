@@ -308,11 +308,28 @@ SUB QUOTE AWARE
 
 INCOMPATIBILITIES WITH MOOSE
     You can only compose one role at a time. If your application is large or
-    complex enough to warrant complex composition, you wanted Moose.
+    complex enough to warrant complex composition, you wanted Moose. Note
+    that this does not mean you can only compose one role per class -
 
-    There is no complex type system. "isa" is verified with a coderef, if
+      with 'FirstRole';
+      with 'SecondRole';
+
+    is absolutely fine, there's just currently no equivalent of Moose's
+
+      with 'FirstRole', 'SecondRole';
+
+    which composes the two roles together, and then applies them.
+
+    There is no built in type system. "isa" is verified with a coderef, if
     you need complex types, just make a library of coderefs, or better yet,
-    functions that return quoted subs.
+    functions that return quoted subs. MooX::Types::MooseLike provides a
+    similar API to MooseX::Types::Moose so that you can write
+
+      has days_to_live => (is => 'ro', isa => Int);
+
+    and have it work with both; it is hoped that providing only subrefs as
+    an API will encourage the use of other type systems as well, since it's
+    probably the weakest part of Moose design-wise.
 
     "initializer" is not supported in core since the author considers it to
     be a bad idea but may be supported by an extension in future.
@@ -324,6 +341,10 @@ INCOMPATIBILITIES WITH MOOSE
     No support for "super", "override", "inner", or "augment" - override can
     be handled by around albeit with a little more typing, and the author
     considers augment to be a bad idea.
+
+    The "dump" method is not provided by default. The author suggests
+    loading Devel::Dwarn into "main::" (via "perl -MDevel::Dwarn ..." for
+    example) and using "$obj->$::Dwarn()" instead.
 
     "default" only supports coderefs, because doing otherwise is usually a
     mistake anyway.
@@ -357,6 +378,23 @@ INCOMPATIBILITIES WITH MOOSE
         use warnings FATAL => "all";
         use MooseX::AttributeShortcuts;
 
+    or, if you're inheriting from a non-Moose class,
+
+        package MyClass;
+
+        use Moose;
+        use MooseX::NonMoose;
+        use warnings FATAL => "all";
+        use MooseX::AttributeShortcuts;
+
+    Finally, Moose requires you to call
+
+        __PACKAGE__->meta->make_immutable;
+
+    at the end of your class to get an inlined (i.e. not horribly slow)
+    constructor. Moo does it automatically the first time ->new is called on
+    your class.
+
 AUTHOR
     mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>
 
@@ -376,6 +414,8 @@ CONTRIBUTORS
     ajgb - Alex J. G. Burzyński (cpan:AJGB) <ajgb@cpan.org>
 
     doy - Jesse Luehrs (cpan:DOY) <doy at tozt dot net>
+
+    perigrin - Chris Prather (cpan:PERIGRIN) <chris@prather.org>
 
 COPYRIGHT
     Copyright (c) 2010-2011 the Moo "AUTHOR" and "CONTRIBUTORS" as listed

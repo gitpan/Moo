@@ -10,8 +10,6 @@ lib/Moo/_Utils.pm
 lib/Moo/Object.pm
 lib/Moo/Role.pm
 lib/oo.pm
-lib/Role/Tiny.pm
-lib/Role/Tiny/With.pm
 lib/Sub/Defer.pm
 lib/Sub/Quote.pm
 maint/bump-version
@@ -38,14 +36,15 @@ t/demolish-bugs-eats_mini.t
 t/demolish-global_destruction.t
 t/extends-non-moo.t
 t/global-destruction-helper.pl
+t/lib/base_class.pm
+t/lib/sub_class.pm
 t/load_module.t
+t/load_module_error.t
 t/load_module_role_tiny.t
 t/method-generate-accessor.t
 t/method-generate-constructor.t
 t/moo-accessors.t
 t/moo.t
-t/role-tiny-with.t
-t/role-tiny.t
 t/sub-defer.t
 t/sub-quote.t
 META.yml                                 Module YAML meta-data (added by MakeMaker)

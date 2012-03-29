@@ -1,5 +1,7 @@
 package Moo::_Utils;
 
+no warnings 'once'; # guard against -w
+
 sub _getglob { \*{$_[0]} }
 sub _getstash { \%{"$_[0]::"} }
 
@@ -11,6 +13,7 @@ BEGIN {
 }
 
 use strictures 1;
+use Module::Runtime qw(require_module);
 use base qw(Exporter);
 use Moo::_mro;
 
@@ -23,7 +26,7 @@ sub _install_modifier {
   my ($into, $type, $name, $code) = @_;
 
   if (my $to_modify = $into->can($name)) { # CMM will throw for us if not
-    { local $@; require Sub::Defer; }
+    require Sub::Defer;
     Sub::Defer::undefer_sub($to_modify);
   }
 
@@ -32,15 +35,13 @@ sub _install_modifier {
 
 our %MAYBE_LOADED;
 
-# _load_module is inlined in Role::Tiny - make sure to copy if you update it.
-
 sub _load_module {
   (my $proto = $_[0]) =~ s/::/\//g;
   return 1 if $INC{"${proto}.pm"};
   # can't just ->can('can') because a sub-package Foo::Bar::Baz
   # creates a 'Baz::' key in Foo::Bar's symbol table
   return 1 if grep !/::$/, keys %{_getstash($_[0])||{}};
-  { local $@; require "${proto}.pm"; }
+  require_module($_[0]);
   return 1;
 }
 

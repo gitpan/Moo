@@ -55,14 +55,14 @@ sub generate_method {
   $body .= '    my $new = '.$self->construction_string.";\n";
   $body .= $self->_assign_new($spec);
   if ($into->can('BUILD')) {
-    { local $@; require Method::Generate::BuildAll; }
+    require Method::Generate::BuildAll;
     $body .= Method::Generate::BuildAll->new->buildall_body_for(
       $into, '$new', '$args'
     );
   }
   $body .= '    return $new;'."\n";
   if ($into->can('DEMOLISH')) {
-    { local $@; require Method::Generate::DemolishAll; }
+    require Method::Generate::DemolishAll;
     Method::Generate::DemolishAll->new->generate_method($into);
   }
   quote_sub

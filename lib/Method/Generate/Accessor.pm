@@ -178,8 +178,15 @@ sub generate_get_default {
 
 sub _generate_use_default {
   my ($self, $me, $name, $spec, $test) = @_;
+  my $get_value = $self->_generate_get_default($me, $name, $spec);
+  if ($spec->{coerce}) {
+    $get_value = $self->_generate_coerce(
+      $name, $get_value,
+      $spec->{coerce}
+    )
+  }
   $self->_generate_simple_set(
-    $me, $name, $spec, $self->_generate_get_default($me, $name, $spec)
+    $me, $name, $spec, $get_value
   ).' unless '.$test;
 }
 
@@ -212,7 +219,7 @@ sub _generate_set {
     if ($coerce) {
       $code .=
         "        \$value = "
-        .$self->_generate_coerce($name, '$self', '$value', $coerce).";\n";
+        .$self->_generate_coerce($name, '$value', $coerce).";\n";
     }
     if ($isa_check) {
       $code .= 
@@ -239,7 +246,7 @@ sub generate_coerce {
 }
 
 sub _generate_coerce {
-  my ($self, $name, $obj, $value, $coerce) = @_;
+  my ($self, $name, $value, $coerce) = @_;
   $self->_generate_call_code($name, 'coerce', "${value}", $coerce);
 }
  
@@ -308,11 +315,11 @@ sub _generate_populate_set {
             .$get_default
             ."\n${get_indent})"
         : $get_default;
-    if ( $spec->{coerce} ) {
-        $get_value = $self->_generate_coerce(
-            $name, $me, $get_value,
-            $spec->{coerce}
-          )
+    if ($spec->{coerce}) {
+      $get_value = $self->_generate_coerce(
+        $name, $get_value,
+        $spec->{coerce}
+      )
     }
     ($spec->{isa}
       ? "    {\n      my \$value = ".$get_value.";\n      "
@@ -336,7 +343,7 @@ sub _generate_populate_set {
       .($spec->{coerce}
         ? "      $source = "
           .$self->_generate_coerce(
-            $name, $me, $source,
+            $name, $source,
             $spec->{coerce}
           ).";\n"
         : ""
@@ -372,7 +379,7 @@ sub _generate_simple_set {
   my $simple = "${me}->{${name_str}} = ${value}";
 
   if ($spec->{weak_ref}) {
-    { local $@; require Scalar::Util; }
+    require Scalar::Util;
 
     # Perl < 5.8.3 can't weaken refs to readonly vars
     # (e.g. string constants). This *can* be solved by:
@@ -387,7 +394,7 @@ sub _generate_simple_set {
 
       eval { Scalar::Util::weaken($simple); 1 } or do {
         if( \$@ =~ /Modification of a read-only value attempted/) {
-          { local \$@; require Carp; }
+          require Carp;
           Carp::croak( sprintf (
             'Reference to readonly value in "%s" can not be weakened on Perl < 5.8.3',
             $name_str,
