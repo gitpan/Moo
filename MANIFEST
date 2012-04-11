@@ -7,8 +7,10 @@ lib/Method/Inliner.pm
 lib/Moo.pm
 lib/Moo/_mro.pm
 lib/Moo/_Utils.pm
+lib/Moo/HandleMoose.pm
 lib/Moo/Object.pm
 lib/Moo/Role.pm
+lib/Moo/sification.pm
 lib/oo.pm
 lib/Sub/Defer.pm
 lib/Sub/Quote.pm
@@ -24,6 +26,7 @@ t/accessor-mixed.t
 t/accessor-pred-clear.t
 t/accessor-reader-writer.t
 t/accessor-roles.t
+t/accessor-shortcuts.t
 t/accessor-trigger.t
 t/accessor-weaken.t
 t/buildall-subconstructor.t
@@ -47,6 +50,13 @@ t/moo-accessors.t
 t/moo.t
 t/sub-defer.t
 t/sub-quote.t
+xt/handle_moose.t
+xt/moo-does-moose-role.t
+xt/moose-accessor-isa.t
+xt/moose-does-moo-role.t
+xt/moose-lazy.t
+xt/moose-method-modifiers.t
+xt/moox-types.t
 META.yml                                 Module YAML meta-data (added by MakeMaker)
 META.json                                Module JSON meta-data (added by MakeMaker)
 README                                   README file (added by Distar)

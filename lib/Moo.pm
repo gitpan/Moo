@@ -4,8 +4,10 @@ use strictures 1;
 use Moo::_Utils;
 use B 'perlstring';
 
-our $VERSION = '0.009014'; # 0.9.13
+our $VERSION = '0.009_015'; # 0.9.15
 $VERSION = eval $VERSION;
+
+require Moo::sification;
 
 our %MAKERS;
 
@@ -21,8 +23,7 @@ sub import {
   };
   *{_getglob("${target}::with")} = sub {
     require Moo::Role;
-    die "Only one role supported at a time by with" if @_ > 1;
-    Moo::Role->apply_role_to_package($target, $_[0]);
+    Moo::Role->apply_roles_to_package($target, $_[0]);
   };
   $MAKERS{$target} = {};
   *{_getglob("${target}::has")} = sub {
@@ -45,6 +46,9 @@ sub import {
     @{"${target}::ISA"} = do {
       require Moo::Object; ('Moo::Object');
     } unless @{"${target}::ISA"};
+  }
+  if ($INC{'Moo/HandleMoose.pm'}) {
+    Moo::HandleMoose::inject_fake_metaclass_for($target);
   }
 }
 

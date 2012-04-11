@@ -93,4 +93,16 @@ run_for 'Default';
 
 run_for 'LazyDefault';
 
+{
+  package Shaz;
+
+  use Moo;
+
+  has one => (is => 'rw', trigger => 1 );
+
+  sub _trigger_one { push @::tr, $_[1] }
+}
+
+run_for 'Shaz';
+
 done_testing;
