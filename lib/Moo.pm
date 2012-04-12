@@ -4,7 +4,7 @@ use strictures 1;
 use Moo::_Utils;
 use B 'perlstring';
 
-our $VERSION = '0.009_015'; # 0.9.15
+our $VERSION = '0.009_016'; # 0.9.16
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -325,8 +325,9 @@ Takes a hashref
 
 =item * trigger
 
-Takes a coderef which will get called any time the attribute is set. Coderef
-will be invoked against the object with the new value as an argument.
+Takes a coderef which will get called any time the attribute is set. This
+includes the constructor. Coderef will be invoked against the object with the
+new value as an argument.
 
 Note that Moose also passes the old value, if any; this feature is not yet
 supported.
@@ -458,7 +459,8 @@ API will encourage the use of other type systems as well, since it's
 probably the weakest part of Moose design-wise.
 
 C<initializer> is not supported in core since the author considers it to be a
-bad idea but may be supported by an extension in future.
+bad idea but may be supported by an extension in future. Meanwhile C<trigger> or
+C<coerce> are more likely to be able to fulfill your needs.
 
 There is no meta object.  If you need this level of complexity you wanted
 L<Moose> - Moo succeeds at being small because it explicitly does not

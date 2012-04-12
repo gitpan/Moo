@@ -204,8 +204,8 @@ IMPORTED SUBROUTINES
     * trigger
 
       Takes a coderef which will get called any time the attribute is set.
-      Coderef will be invoked against the object with the new value as an
-      argument.
+      This includes the constructor. Coderef will be invoked against the
+      object with the new value as an argument.
 
       Note that Moose also passes the old value, if any; this feature is not
       yet supported.
@@ -332,7 +332,8 @@ INCOMPATIBILITIES WITH MOOSE
     probably the weakest part of Moose design-wise.
 
     "initializer" is not supported in core since the author considers it to
-    be a bad idea but may be supported by an extension in future.
+    be a bad idea but may be supported by an extension in future. Meanwhile
+    "trigger" or "coerce" are more likely to be able to fulfill your needs.
 
     There is no meta object. If you need this level of complexity you wanted
     Moose - Moo succeeds at being small because it explicitly does not
