@@ -50,7 +50,9 @@ t/moo-accessors.t
 t/moo.t
 t/sub-defer.t
 t/sub-quote.t
+t/subconstructor.t
 xt/handle_moose.t
+xt/jenga.t
 xt/moo-does-moose-role.t
 xt/moose-accessor-isa.t
 xt/moose-does-moo-role.t

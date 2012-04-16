@@ -1,3 +1,7 @@
+0.009_017 - 2012-04-16
+  - mangle constructor meta-method on inflation so make_immutable works
+  - fix possible infinite loop caused by subconstructor code
+
 0.009_016 - 2012-04-12
   - don't accidentally load Moo::HandleMoose during global destruction
   - better docs for trigger (and initializer's absence)
