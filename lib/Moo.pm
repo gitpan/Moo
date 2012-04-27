@@ -4,7 +4,7 @@ use strictures 1;
 use Moo::_Utils;
 use B 'perlstring';
 
-our $VERSION = '0.009_017'; # 0.9.17
+our $VERSION = '0.091000'; # 0.91.0
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -16,17 +16,22 @@ sub import {
   my $class = shift;
   strictures->import;
   return if $MAKERS{$target}; # already exported into this package
-  *{_getglob("${target}::extends")} = sub {
+  _install_coderef "${target}::extends" => sub {
     _load_module($_) for @_;
     # Can't do *{...} = \@_ or 5.10.0's mro.pm stops seeing @ISA
     @{*{_getglob("${target}::ISA")}{ARRAY}} = @_;
+    if (my $old = delete $Moo::MAKERS{$target}{constructor}) {
+      delete _getstash($target)->{new};
+      Moo->_constructor_maker_for($target)
+         ->register_attribute_specs(%{$old->all_attribute_specs});
+    }
   };
-  *{_getglob("${target}::with")} = sub {
+  _install_coderef "${target}::with" => sub {
     require Moo::Role;
     Moo::Role->apply_roles_to_package($target, $_[0]);
   };
   $MAKERS{$target} = {};
-  *{_getglob("${target}::has")} = sub {
+  _install_coderef "${target}::has" => sub {
     my ($name, %spec) = @_;
     ($MAKERS{$target}{accessor} ||= do {
       require Method::Generate::Accessor;
@@ -36,7 +41,7 @@ sub import {
           ->register_attribute_specs($name, \%spec);
   };
   foreach my $type (qw(before after around)) {
-    *{_getglob "${target}::${type}"} = sub {
+    _install_coderef "${target}::${type}" => sub {
       require Class::Method::Modifiers;
       _install_modifier($target, $type, @_);
     };
@@ -186,6 +191,30 @@ Hence - Moo exists as its name - Minimal Object Orientation - with a pledge
 to make it smooth to upgrade to L<Moose> when you need more than minimal
 features.
 
+=head1 Moo and Moose - NEW, EXPERIMENTAL
+
+If L<Moo> detects L<Moose> being loaded, it will automatically register
+metaclasses for your L<Moo> and L<Moo::Role> packages, so you should be able
+to use them in L<Moose> code without it ever realising you aren't using
+L<Moose> everywhere.
+
+Extending a L<Moose> class or consuming a L<Moose::Role> should also work.
+
+This means that there is no need for anything like L<Any::Moose> for Moo
+code - Moo and Moose code should simply interoperate without problem.
+
+However, these features are new as of 0.91.0 (0.091000) so while serviceable,
+they are absolutely certain to not be 100% yet; please do report bugs.
+
+If you need to disable the metaclass creation, add:
+
+  no Moo::sification;
+
+to your code before Moose is loaded, but bear in mind that this switch is
+currently global and turns the mechanism off entirely, so don't put this
+in library code, only in a top level script as a temporary measure while
+you send a bug report.
+
 =head1 IMPORTED METHODS
 
 =head2 new
@@ -198,13 +227,12 @@ or
 
 =head2 BUILDARGS
 
- around BUILDARGS => sub {
-   my $orig = shift;
+ sub BUILDARGS {
    my ( $class, @args ) = @_;
 
    unshift @args, "attr1" if @args % 2 == 1;
 
-   return $class->$orig(@args);
+   return { @args };
  };
 
  Foo::Bar->new( 3 );
@@ -473,7 +501,7 @@ No support for C<super>, C<override>, C<inner>, or C<augment> - override can
 be handled by around albeit with a little more typing, and the author considers
 augment to be a bad idea.
 
-The C<dump> method is not provided by default. The author suggests loading 
+The C<dump> method is not provided by default. The author suggests loading
 L<Devel::Dwarn> into C<main::> (via C<perl -MDevel::Dwarn ...> for example) and
 using C<$obj-E<gt>$::Dwarn()> instead.
 
@@ -495,7 +523,7 @@ similar invocation for L<Moose> would be:
 
 Additionally, L<Moo> supports a set of attribute option shortcuts intended to
 reduce common boilerplate.  The set of shortcuts is the same as in the L<Moose>
-module L<MooseX::AttributeShortcuts>.  So if you:
+module L<MooseX::AttributeShortcuts> as of its version 0.009+.  So if you:
 
     package MyClass;
     use Moo;
@@ -524,6 +552,10 @@ Finally, Moose requires you to call
 at the end of your class to get an inlined (i.e. not horribly slow)
 constructor. Moo does it automatically the first time ->new is called
 on your class.
+
+=head1 SUPPORT
+
+IRC: #web-simple on irc.perl.org
 
 =head1 AUTHOR
 

@@ -17,7 +17,7 @@ lib/Sub/Quote.pm
 maint/bump-version
 maint/Makefile.PL.include
 Makefile.PL
-MANIFEST			This list of files
+MANIFEST
 t/accessor-coerce.t
 t/accessor-default.t
 t/accessor-handles.t
@@ -31,6 +31,7 @@ t/accessor-trigger.t
 t/accessor-weaken.t
 t/buildall-subconstructor.t
 t/buildall.t
+t/buildargs-error.t
 t/buildargs.t
 t/compose-roles.t
 t/demolish-basics.t
@@ -39,6 +40,7 @@ t/demolish-bugs-eats_mini.t
 t/demolish-global_destruction.t
 t/extends-non-moo.t
 t/global-destruction-helper.pl
+t/has-before-extends.t
 t/lib/base_class.pm
 t/lib/sub_class.pm
 t/load_module.t

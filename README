@@ -72,6 +72,30 @@ WHY MOO EXISTS
     pledge to make it smooth to upgrade to Moose when you need more than
     minimal features.
 
+Moo and Moose - NEW, EXPERIMENTAL
+    If Moo detects Moose being loaded, it will automatically register
+    metaclasses for your Moo and Moo::Role packages, so you should be able
+    to use them in Moose code without it ever realising you aren't using
+    Moose everywhere.
+
+    Extending a Moose class or consuming a Moose::Role should also work.
+
+    This means that there is no need for anything like Any::Moose for Moo
+    code - Moo and Moose code should simply interoperate without problem.
+
+    However, these features are new as of 0.91.0 (0.091000) so while
+    serviceable, they are absolutely certain to not be 100% yet; please do
+    report bugs.
+
+    If you need to disable the metaclass creation, add:
+
+      no Moo::sification;
+
+    to your code before Moose is loaded, but bear in mind that this switch
+    is currently global and turns the mechanism off entirely, so don't put
+    this in library code, only in a top level script as a temporary measure
+    while you send a bug report.
+
 IMPORTED METHODS
   new
      Foo::Bar->new( attr1 => 3 );
@@ -81,13 +105,12 @@ IMPORTED METHODS
      Foo::Bar->new({ attr1 => 3 });
 
   BUILDARGS
-     around BUILDARGS => sub {
-       my $orig = shift;
+     sub BUILDARGS {
        my ( $class, @args ) = @_;
 
        unshift @args, "attr1" if @args % 2 == 1;
 
-       return $class->$orig(@args);
+       return { @args };
      };
 
      Foo::Bar->new( 3 );
@@ -366,7 +389,8 @@ INCOMPATIBILITIES WITH MOOSE
 
     Additionally, Moo supports a set of attribute option shortcuts intended
     to reduce common boilerplate. The set of shortcuts is the same as in the
-    Moose module MooseX::AttributeShortcuts. So if you:
+    Moose module MooseX::AttributeShortcuts as of its version 0.009+. So if
+    you:
 
         package MyClass;
         use Moo;
@@ -395,6 +419,9 @@ INCOMPATIBILITIES WITH MOOSE
     at the end of your class to get an inlined (i.e. not horribly slow)
     constructor. Moo does it automatically the first time ->new is called on
     your class.
+
+SUPPORT
+    IRC: #web-simple on irc.perl.org
 
 AUTHOR
     mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>
