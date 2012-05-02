@@ -36,11 +36,11 @@
             "Class::Method::Modifiers" : "1.07",
             "Devel::GlobalDestruction" : "0.05",
             "Module::Runtime" : "0.013",
-            "Role::Tiny" : "1.0009",
+            "Role::Tiny" : "1.001001",
             "strictures" : "1.001001"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "0.091000"
+   "version" : "0.091001"
 }
