@@ -15,11 +15,13 @@ lib/oo.pm
 lib/Sub/Defer.pm
 lib/Sub/Quote.pm
 maint/bump-version
+maint/fulltest
 maint/Makefile.PL.include
 Makefile.PL
 MANIFEST
 t/accessor-coerce.t
 t/accessor-default.t
+t/accessor-generator-extension.t
 t/accessor-handles.t
 t/accessor-isa.t
 t/accessor-mixed.t
@@ -55,12 +57,16 @@ t/sub-quote.t
 t/subconstructor.t
 xt/handle_moose.t
 xt/jenga.t
+xt/lib/ExampleMooseRoleOne.pm
+xt/lib/ExampleMooseRoleTwo.pm
 xt/moo-does-moose-role.t
 xt/moose-accessor-isa.t
+xt/moose-consume-moo-role-no-moo-loaded.t
 xt/moose-does-moo-role.t
 xt/moose-lazy.t
 xt/moose-method-modifiers.t
 xt/moox-types.t
+xt/more-jenga.t
 META.yml                                 Module YAML meta-data (added by MakeMaker)
 META.json                                Module JSON meta-data (added by MakeMaker)
 README                                   README file (added by Distar)

@@ -46,7 +46,7 @@ sub generate_method {
   if (my $reader = $spec->{reader}) {
     if (our $CAN_HAZ_XS && $self->is_simple_get($name, $spec)) {
       $methods{$reader} = $self->_generate_xs(
-        getters => $into, $reader, $name
+        getters => $into, $reader, $name, $spec
       );
     } else {
       $self->{captures} = {};
@@ -65,7 +65,7 @@ sub generate_method {
       && $self->is_simple_set($name, $spec)
     ) {
       $methods{$accessor} = $self->_generate_xs(
-        accessors => $into, $accessor, $name
+        accessors => $into, $accessor, $name, $spec
       );
     } else {
       $self->{captures} = {};
@@ -82,7 +82,7 @@ sub generate_method {
       && $self->is_simple_set($name, $spec)
     ) {
       $methods{$writer} = $self->_generate_xs(
-        setters => $into, $writer, $name
+        setters => $into, $writer, $name, $spec
       );
     } else {
       $self->{captures} = {};
@@ -96,13 +96,13 @@ sub generate_method {
   if (my $pred = $spec->{predicate}) {
     $methods{$pred} =
       quote_sub "${into}::${pred}" =>
-        '    '.$self->_generate_simple_has('$_[0]', $name)."\n"
+        '    '.$self->_generate_simple_has('$_[0]', $name, $spec)."\n"
       ;
   }
   if (my $cl = $spec->{clearer}) {
     $methods{$cl} =
       quote_sub "${into}::${cl}" => 
-        "    delete \$_[0]->{${\perlstring $name}}\n"
+        $self->_generate_simple_clear('$_[0]', $name, $spec)."\n"
       ;
   }
   if (my $hspec = $spec->{handles}) {
@@ -165,13 +165,13 @@ sub has_eager_default {
 
 sub _generate_get {
   my ($self, $name, $spec) = @_;
-  my $simple = $self->_generate_simple_get('$_[0]', $name);
+  my $simple = $self->_generate_simple_get('$_[0]', $name, $spec);
   if ($self->is_simple_get($name, $spec)) {
     $simple;
   } else {
     'do { '.$self->_generate_use_default(
       '$_[0]', $name, $spec,
-      $self->_generate_simple_has('$_[0]', $name),
+      $self->_generate_simple_has('$_[0]', $name, $spec),
     ).'; '.$simple.' }';
   }
 }
@@ -179,6 +179,11 @@ sub _generate_get {
 sub _generate_simple_has {
   my ($self, $me, $name) = @_;
   "exists ${me}->{${\perlstring $name}}";
+}
+
+sub _generate_simple_clear {
+  my ($self, $me, $name) = @_;
+  "    delete ${me}->{${\perlstring $name}}\n"
 }
 
 sub generate_get_default {
@@ -345,7 +350,7 @@ sub _generate_populate_set {
     .($spec->{trigger}
       ? '    '
         .$self->_generate_trigger(
-          $name, $me, $self->_generate_simple_get($me, $name),
+          $name, $me, $self->_generate_simple_get($me, $name, $spec),
           $spec->{trigger}
         )." if ${test};\n"
       : ''
@@ -371,7 +376,7 @@ sub _generate_populate_set {
       .($spec->{trigger}
         ? "      "
           .$self->_generate_trigger(
-            $name, $me, $self->_generate_simple_get($me, $name),
+            $name, $me, $self->_generate_simple_get($me, $name, $spec),
             $spec->{trigger}
           ).";\n"
         : ""
@@ -385,10 +390,16 @@ sub generate_multi_set {
   "\@{${me}}{qw(${\join ' ', @$to_set})} = $from";
 }
 
+sub _generate_core_set {
+  my ($self, $me, $name, $spec, $value) = @_;
+  my $name_str = perlstring $name;
+  "${me}->{${name_str}} = ${value}";
+}
+
 sub _generate_simple_set {
   my ($self, $me, $name, $spec, $value) = @_;
   my $name_str = perlstring $name;
-  my $simple = "${me}->{${name_str}} = ${value}";
+  my $simple = $self->_generate_core_set($me, $name, $spec, $value);
 
   if ($spec->{weak_ref}) {
     require Scalar::Util;
@@ -450,5 +461,7 @@ sub _generate_xs {
   );
   $into->can($name);
 }
+
+sub default_construction_string { '{}' }
 
 1;

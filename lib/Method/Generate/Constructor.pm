@@ -7,8 +7,13 @@ use Sub::Defer;
 use B 'perlstring';
 
 sub register_attribute_specs {
-  my ($self, %spec) = @_;
-  @{$self->{attribute_specs}||={}}{keys %spec} = values %spec;
+  my ($self, @new_specs) = @_;
+  my $specs = $self->{attribute_specs}||={};
+  while (my ($name, $new_spec) = splice @new_specs, 0, 2) {
+    $new_spec->{index} = scalar keys %$specs
+      unless defined $new_spec->{index};
+    $specs->{$name} = $new_spec;
+  }
   $self;
 }
 
@@ -22,7 +27,10 @@ sub accessor_generator {
 
 sub construction_string {
   my ($self) = @_;
-  $self->{construction_string} or 'bless({}, $class);'
+  $self->{construction_string}
+    or 'bless('
+       .$self->accessor_generator->default_construction_string
+       .', $class);'
 }
 
 sub install_delayed {
@@ -138,7 +146,7 @@ sub _assign_new {
   join '', (
     @init
       ? '    '.$self->_cap_call($ag->generate_multi_set(
-          '$new', [ @slots ], '@{$args}{qw('.join(' ',@init).')}'
+          '$new', [ @slots ], '@{$args}{qw('.join(' ',@init).')}', $spec
         )).";\n"
       : ''
   ), map {
@@ -197,7 +205,7 @@ sub _fire_triggers {
     my ($init, $trigger) = @{$spec->{$name}}{qw(init_arg trigger)};
     next unless $init && $trigger;
     my ($code, $add_captures) = $acc->generate_trigger(
-      $name, '$new', $acc->generate_simple_get('$new', $name), $trigger
+      $name, '$new', $acc->generate_simple_get('$new', $name, $spec), $trigger
     );
     @{$captures}{keys %$add_captures} = values %$add_captures;
     $fire .= "    ${code} if exists \$args->{${\perlstring $init}};\n";

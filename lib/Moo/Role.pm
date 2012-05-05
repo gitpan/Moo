@@ -4,6 +4,8 @@ use strictures 1;
 use Moo::_Utils;
 use base qw(Role::Tiny);
 
+require Moo::sification;
+
 BEGIN { *INFO = \%Role::Tiny::INFO }
 
 our %INFO;
@@ -20,7 +22,7 @@ sub import {
       require Method::Generate::Accessor;
       Method::Generate::Accessor->new
     })->generate_method($target, $name, \%spec);
-    $INFO{$target}{attributes}{$name} = \%spec;
+    push @{$INFO{$target}{attributes}||=[]}, $name, \%spec;
   };
   if ($INC{'Moo/HandleMoose.pm'}) {
     Moo::HandleMoose::inject_fake_metaclass_for($target);
@@ -34,15 +36,17 @@ sub _inhale_if_moose {
   if (!$INFO{$role} and $INC{"Moose.pm"}) {
     if (my $meta = Class::MOP::class_of($role)) {
       $INFO{$role}{methods} = {
-        map +($_ => $role->can($_)), $meta->get_method_list
+        map +($_ => $role->can($_)),
+          grep !$meta->get_method($_)->isa('Class::MOP::Method::Meta'),
+            $meta->get_method_list
       };
       $Role::Tiny::APPLIED_TO{$role} = {
         map +($_->name => 1), $meta->calculate_all_roles
       };
       $INFO{$role}{requires} = [ $meta->get_required_method_list ];
-      $INFO{$role}{attributes} = {
+      $INFO{$role}{attributes} = [
         map +($_ => $meta->get_attribute($_)), $meta->get_attribute_list
-      };
+      ];
       my $mods = $INFO{$role}{modifiers} = [];
       foreach my $type (qw(before after around)) {
         my $map = $meta->${\"get_${type}_method_modifiers_map"};
@@ -58,27 +62,52 @@ sub _inhale_if_moose {
   }
 }
 
+sub _maybe_make_accessors {
+  my ($self, $role, $target) = @_;
+  my $m;
+  if ($INFO{$role}{inhaled_from_moose}
+      or $m = Moo->_accessor_maker_for($target)
+      and ref($m) ne 'Method::Generate::Accessor') {
+    $self->_make_accessors($role, $target);
+  }
+}
+
 sub _make_accessors_if_moose {
   my ($self, $role, $target) = @_;
   if ($INFO{$role}{inhaled_from_moose}) {
-    if (my $attrs = $INFO{$role}{attributes}) {
-      my $acc_gen = ($Moo::MAKERS{$target}{accessor} ||= do {
-        require Method::Generate::Accessor;
-        Method::Generate::Accessor->new
-      });
-      foreach my $name (keys %{$attrs}) {
-        $acc_gen->generate_method($target, $name, $attrs->{$name});
-      }
-    }
+    $self->_make_accessors($role, $target);
   }
+}
+
+sub _make_accessors {
+  my ($self, $role, $target) = @_;
+  my $acc_gen = ($Moo::MAKERS{$target}{accessor} ||= do {
+    require Method::Generate::Accessor;
+    Method::Generate::Accessor->new
+  });
+  my $con_gen = $Moo::MAKERS{$target}{constructor};
+  my @attrs = @{$INFO{$role}{attributes}||[]};
+  while (my ($name, $spec) = splice @attrs, 0, 2) {
+    # needed to ensure we got an index for an arrayref based generator
+    if ($con_gen) {
+      $spec = $con_gen->all_attribute_specs->{$name};
+    }
+    $acc_gen->generate_method($target, $name, $spec);
+  }
+}
+
+sub apply_roles_to_package {
+  my ($me, $to, @roles) = @_;
+  $me->_inhale_if_moose($_) for @roles;
+  $me->SUPER::apply_roles_to_package($to, @roles);
 }
 
 sub apply_single_role_to_package {
   my ($me, $to, $role) = @_;
   $me->_inhale_if_moose($role);
-  $me->_make_accessors_if_moose($role, $to);
-  $me->SUPER::apply_single_role_to_package($to, $role);
   $me->_handle_constructor($to, $INFO{$role}{attributes});
+  $me->_maybe_make_accessors($role, $to);
+  $me->SUPER::apply_single_role_to_package($to, $role);
 }
 
 sub create_class_with_roles {
@@ -92,6 +121,15 @@ sub create_class_with_roles {
 
   $me->_inhale_if_moose($_) for @roles;
 
+  my $m;
+  if ($m = Moo->_accessor_maker_for($superclass)
+      and ref($m) ne 'Method::Generate::Accessor') {
+    # old fashioned way time.
+    *{_getglob("${new_name}::ISA")} = [ $superclass ];
+    $me->apply_roles_to_package($new_name, @roles);
+    return $new_name;
+  }
+
   require Sub::Quote;
 
   $me->SUPER::create_class_with_roles($superclass, @roles);
@@ -103,7 +141,7 @@ sub create_class_with_roles {
   $Moo::MAKERS{$new_name} = {};
 
   $me->_handle_constructor(
-    $new_name, { map %{$INFO{$_}{attributes}||{}}, @roles }, $superclass
+    $new_name, [ map @{$INFO{$_}{attributes}||[]}, @roles ], $superclass
   );
 
   return $new_name;
@@ -124,14 +162,15 @@ sub _install_single_modifier {
 
 sub _handle_constructor {
   my ($me, $to, $attr_info, $superclass) = @_;
-  return unless $attr_info && keys %$attr_info;
+  return unless $attr_info && @$attr_info;
   if ($INFO{$to}) {
-    @{$INFO{$to}{attributes}||={}}{keys %$attr_info} = values %$attr_info;
+    push @{$INFO{$to}{attributes}||=[]}, @$attr_info;
   } else {
     # only fiddle with the constructor if the target is a Moo class
     if ($INC{"Moo.pm"}
         and my $con = Moo->_constructor_maker_for($to, $superclass)) {
-      $con->register_attribute_specs(%$attr_info);
+      # shallow copy of the specs since the constructor will assign an index
+      $con->register_attribute_specs(map ref() ? { %$_ } : $_, @$attr_info);
     }
   }
 }
