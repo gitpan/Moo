@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '0.091002'; # 0.91.2
+our $VERSION = '0.091003'; # 0.91.3
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -17,7 +17,7 @@ sub import {
   my $class = shift;
   strictures->import;
   return if $MAKERS{$target}; # already exported into this package
-  _install_coderef "${target}::extends" => sub {
+  _install_coderef "${target}::extends" => "Moo::extends" => sub {
     _load_module($_) for @_;
     # Can't do *{...} = \@_ or 5.10.0's mro.pm stops seeing @ISA
     @{*{_getglob("${target}::ISA")}{ARRAY}} = @_;
@@ -27,12 +27,12 @@ sub import {
          ->register_attribute_specs(%{$old->all_attribute_specs});
     }
   };
-  _install_coderef "${target}::with" => sub {
+  _install_coderef "${target}::with" => "Moo::with" => sub {
     require Moo::Role;
     Moo::Role->apply_roles_to_package($target, $_[0]);
   };
   $MAKERS{$target} = {};
-  _install_coderef "${target}::has" => sub {
+  _install_coderef "${target}::has" => "Moo::has" => sub {
     my ($name, %spec) = @_;
     $class->_constructor_maker_for($target)
           ->register_attribute_specs($name, \%spec);
@@ -40,7 +40,7 @@ sub import {
           ->generate_method($target, $name, \%spec);
   };
   foreach my $type (qw(before after around)) {
-    _install_coderef "${target}::${type}" => sub {
+    _install_coderef "${target}::${type}" => "Moo::${type}" => sub {
       require Class::Method::Modifiers;
       _install_modifier($target, $type, @_);
     };
@@ -308,10 +308,13 @@ them like 'use base' would.
 =head2 with
 
  with 'Some::Role1';
- with 'Some::Role2';
 
-Composes a L<Role::Tiny> into current class.  Only one role may be composed in
-at a time to allow the code to remain as simple as possible.
+or
+
+ with 'Some::Role1', 'Some::Role2';
+
+Composes one or more L<Moo::Role> (or L<Role::Tiny>) roles into the current
+class.  An error will be raised if these roles have conflicting methods.
 
 =head2 has
 
@@ -327,9 +330,24 @@ The options for C<has> are as follows:
 
 =item * is
 
-B<required>, must be C<ro> or C<rw>.  Unsurprisingly, C<ro> generates an
-accessor that will not respond to arguments; to be clear: a getter only. C<rw>
-will create a perlish getter/setter.
+B<required>, may be C<ro>, C<rw>, C<lazy> or C<rwp>.
+
+C<ro> generates an accessor that dies if you attempt to write to it - i.e.
+a getter only - by defaulting C<reader> to the name of the attribute.
+
+C<rw> generates a normal getter/setter by defauting C<accessor> to the
+name of the attribute.
+
+C<lazy> generates a reader like C<ro>, but also sets C<lazy> to 1 and
+C<builder> to C<_build_${attribute_name}> to allow on-demand generated
+attributes.  This feature was my attempt to fix my incompetence when
+originally designing C<lazy_build>, and is also implemented by
+L<MooseX::AttributeShortcuts>.
+
+C<rwp> generates a reader like C<ro>, but also sets C<writer> to
+C<_set_${attribute_name}> for attributes that are designed to be written
+from inside of the class, but read-only from outside.
+This feature comes from L<MooseX::AttributeShortcuts>.
 
 =item * isa
 
@@ -343,6 +361,22 @@ one should do
 
 L<Sub::Quote aware|/SUB QUOTE AWARE>
 
+If you want L<MooseX::Types> style named types, look at
+L<MooX::Types::MooseLike>.
+
+To cause your C<isa> entries to be automatically mapped to named
+L<Moose::Meta::TypeConstraint> objects (rather than the default behaviour
+of creating an anonymous type), set:
+
+  $Moo::HandleMoose::TYPE_MAP{$isa_coderef} = sub {
+    require MooseX::Types::Something;
+    return MooseX::Types::Something::TypeName();
+  };
+
+Note that this example is purely illustrative; anything that returns a
+L<Moose::Meta::TypeConstraint> object or something similar enough to it to
+make L<Moose> happy is fine.
+
 =item * coerce
 
 Takes a coderef which is meant to coerce the attribute.  The basic idea is to
@@ -352,7 +386,9 @@ do something like the following:
    $_[0] + 1 unless $_[0] % 2
  },
 
-Coerce does not require C<isa> to be defined.
+Coerce does not require C<isa> to be defined, but since L<Moose> does
+require it, the metaclass inflation for coerce-alone is a trifle insane
+and if you attempt to subtype the result will almost certainly break.
 
 L<Sub::Quote aware|/SUB QUOTE AWARE>
 
@@ -381,6 +417,10 @@ Takes a coderef which will get called any time the attribute is set. This
 includes the constructor. Coderef will be invoked against the object with the
 new value as an argument.
 
+If you set this to just C<1>, it generates a trigger which calls the
+C<_trigger_${attr_name}> method on C<$self>. This feature comes from
+L<MooseX::AttributeShortcuts>.
+
 Note that Moose also passes the old value, if any; this feature is not yet
 supported.
 
@@ -403,8 +443,10 @@ L<Sub::Quote aware|/SUB QUOTE AWARE>
 
 Takes a method name which will return true if an attribute has a value.
 
-A common example of this would be to call it C<has_$foo>, implying that the
-object has a C<$foo> set.
+If you set this to just C<1>, the predicate is automatically named
+C<has_${attr_name}> if your attribute's name does not start with an
+underscore, or <_has_${attr_name_without_the_underscore}> if it does.
+This feature comes from L<MooseX::AttributeShortcuts>.
 
 =item * builder
 
@@ -417,9 +459,17 @@ Moo will call
 
   $self->$builder;
 
+If you set this to just C<1>, the predicate is automatically named
+C<_build_${attr_name}>.  This feature comes from L<MooseX::AttributeShortcuts>.
+
 =item * clearer
 
 Takes a method name which will clear the attribute.
+
+If you set this to just C<1>, the clearer is automatically named
+C<clear_${attr_name}> if your attribute's name does not start with an
+underscore, or <_clear_${attr_name_without_the_underscore}> if it does.
+This feature comes from L<MooseX::AttributeShortcuts>.
 
 =item * lazy
 
@@ -454,6 +504,7 @@ leaks.
 Takes the name of the key to look for at instantiation time of the object.  A
 common use of this is to make an underscored attribute have a non-underscored
 initialization name. C<undef> means that passing the value in on instantiation
+is ignored.
 
 =back
 
@@ -486,19 +537,6 @@ aware can take advantage of this.
 
 =head1 INCOMPATIBILITIES WITH MOOSE
 
-You can only compose one role at a time.  If your application is large or
-complex enough to warrant complex composition, you wanted L<Moose>.  Note that
-this does not mean you can only compose one role per class -
-
-  with 'FirstRole';
-  with 'SecondRole';
-
-is absolutely fine, there's just currently no equivalent of Moose's
-
-  with 'FirstRole', 'SecondRole';
-
-which composes the two roles together, and then applies them.
-
 There is no built in type system.  C<isa> is verified with a coderef, if you
 need complex types, just make a library of coderefs, or better yet, functions
 that return quoted subs. L<MooX::Types::MooseLike> provides a similar API
@@ -516,7 +554,11 @@ C<coerce> are more likely to be able to fulfill your needs.
 
 There is no meta object.  If you need this level of complexity you wanted
 L<Moose> - Moo succeeds at being small because it explicitly does not
-provide a metaprotocol.
+provide a metaprotocol. However, if you load L<Moose>, then
+
+  Class::MOP::class_of($moo_class_or_role)
+
+will return an appropriate metaclass pre-populated by L<Moo>.
 
 No support for C<super>, C<override>, C<inner>, or C<augment> - override can
 be handled by around albeit with a little more typing, and the author considers
@@ -529,12 +571,14 @@ using C<$obj-E<gt>$::Dwarn()> instead.
 L</default> only supports coderefs, because doing otherwise is usually a
 mistake anyway.
 
-C<lazy_build> is not supported per se, but of course it will work if you
-manually set all the options it implies.
+C<lazy_build> is not supported; you are instead encouraged to use the
+C<is => 'lazy'> option supported by L<Moo> and L<MooseX::AttributeShortcuts>.
 
 C<auto_deref> is not supported since the author considers it a bad idea.
 
-C<documentation> is not supported since it's a very poor replacement for POD.
+C<documentation> will show up in a L<Moose> metaclass created from your class
+but is otherwise ignored. Then again, L<Moose> ignors it as well, so this
+is arguably not an incompatibility.
 
 Handling of warnings: when you C<use Moo> we enable FATAL warnings.  The nearest
 similar invocation for L<Moose> would be:

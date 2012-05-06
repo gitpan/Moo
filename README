@@ -160,10 +160,13 @@ IMPORTED SUBROUTINES
 
   with
      with 'Some::Role1';
-     with 'Some::Role2';
 
-    Composes a Role::Tiny into current class. Only one role may be composed
-    in at a time to allow the code to remain as simple as possible.
+    or
+
+     with 'Some::Role1', 'Some::Role2';
+
+    Composes one or more Moo::Role (or Role::Tiny) roles into the current
+    class. An error will be raised if these roles have conflicting methods.
 
   has
      has attr => (
@@ -176,9 +179,25 @@ IMPORTED SUBROUTINES
 
     * is
 
-      required, must be "ro" or "rw". Unsurprisingly, "ro" generates an
-      accessor that will not respond to arguments; to be clear: a getter
-      only. "rw" will create a perlish getter/setter.
+      required, may be "ro", "rw", "lazy" or "rwp".
+
+      "ro" generates an accessor that dies if you attempt to write to it -
+      i.e. a getter only - by defaulting "reader" to the name of the
+      attribute.
+
+      "rw" generates a normal getter/setter by defauting "accessor" to the
+      name of the attribute.
+
+      "lazy" generates a reader like "ro", but also sets "lazy" to 1 and
+      "builder" to "_build_${attribute_name}" to allow on-demand generated
+      attributes. This feature was my attempt to fix my incompetence when
+      originally designing "lazy_build", and is also implemented by
+      MooseX::AttributeShortcuts.
+
+      "rwp" generates a reader like "ro", but also sets "writer" to
+      "_set_${attribute_name}" for attributes that are designed to be
+      written from inside of the class, but read-only from outside. This
+      feature comes from MooseX::AttributeShortcuts.
 
     * isa
 
@@ -192,6 +211,22 @@ IMPORTED SUBROUTINES
 
       Sub::Quote aware
 
+      If you want MooseX::Types style named types, look at
+      MooX::Types::MooseLike.
+
+      To cause your "isa" entries to be automatically mapped to named
+      Moose::Meta::TypeConstraint objects (rather than the default behaviour
+      of creating an anonymous type), set:
+
+        $Moo::HandleMoose::TYPE_MAP{$isa_coderef} = sub {
+          require MooseX::Types::Something;
+          return MooseX::Types::Something::TypeName();
+        };
+
+      Note that this example is purely illustrative; anything that returns a
+      Moose::Meta::TypeConstraint object or something similar enough to it
+      to make Moose happy is fine.
+
     * coerce
 
       Takes a coderef which is meant to coerce the attribute. The basic idea
@@ -201,7 +236,10 @@ IMPORTED SUBROUTINES
          $_[0] + 1 unless $_[0] % 2
        },
 
-      Coerce does not require "isa" to be defined.
+      Coerce does not require "isa" to be defined, but since Moose does
+      require it, the metaclass inflation for coerce-alone is a trifle
+      insane and if you attempt to subtype the result will almost certainly
+      break.
 
       Sub::Quote aware
 
@@ -230,6 +268,10 @@ IMPORTED SUBROUTINES
       This includes the constructor. Coderef will be invoked against the
       object with the new value as an argument.
 
+      If you set this to just 1, it generates a trigger which calls the
+      "_trigger_${attr_name}" method on $self. This feature comes from
+      MooseX::AttributeShortcuts.
+
       Note that Moose also passes the old value, if any; this feature is not
       yet supported.
 
@@ -253,8 +295,10 @@ IMPORTED SUBROUTINES
       Takes a method name which will return true if an attribute has a
       value.
 
-      A common example of this would be to call it "has_$foo", implying that
-      the object has a $foo set.
+      If you set this to just 1, the predicate is automatically named
+      "has_${attr_name}" if your attribute's name does not start with an
+      underscore, or <_has_${attr_name_without_the_underscore}> if it does.
+      This feature comes from MooseX::AttributeShortcuts.
 
     * builder
 
@@ -267,9 +311,18 @@ IMPORTED SUBROUTINES
 
         $self->$builder;
 
+      If you set this to just 1, the predicate is automatically named
+      "_build_${attr_name}". This feature comes from
+      MooseX::AttributeShortcuts.
+
     * clearer
 
       Takes a method name which will clear the attribute.
+
+      If you set this to just 1, the clearer is automatically named
+      "clear_${attr_name}" if your attribute's name does not start with an
+      underscore, or <_clear_${attr_name_without_the_underscore}> if it
+      does. This feature comes from MooseX::AttributeShortcuts.
 
     * lazy
 
@@ -304,7 +357,7 @@ IMPORTED SUBROUTINES
       Takes the name of the key to look for at instantiation time of the
       object. A common use of this is to make an underscored attribute have
       a non-underscored initialization name. "undef" means that passing the
-      value in on instantiation
+      value in on instantiation is ignored.
 
   before
      before foo => sub { ... };
@@ -330,19 +383,6 @@ SUB QUOTE AWARE
     Sub::Quote aware can take advantage of this.
 
 INCOMPATIBILITIES WITH MOOSE
-    You can only compose one role at a time. If your application is large or
-    complex enough to warrant complex composition, you wanted Moose. Note
-    that this does not mean you can only compose one role per class -
-
-      with 'FirstRole';
-      with 'SecondRole';
-
-    is absolutely fine, there's just currently no equivalent of Moose's
-
-      with 'FirstRole', 'SecondRole';
-
-    which composes the two roles together, and then applies them.
-
     There is no built in type system. "isa" is verified with a coderef, if
     you need complex types, just make a library of coderefs, or better yet,
     functions that return quoted subs. MooX::Types::MooseLike provides a
@@ -360,7 +400,11 @@ INCOMPATIBILITIES WITH MOOSE
 
     There is no meta object. If you need this level of complexity you wanted
     Moose - Moo succeeds at being small because it explicitly does not
-    provide a metaprotocol.
+    provide a metaprotocol. However, if you load Moose, then
+
+      Class::MOP::class_of($moo_class_or_role)
+
+    will return an appropriate metaclass pre-populated by Moo.
 
     No support for "super", "override", "inner", or "augment" - override can
     be handled by around albeit with a little more typing, and the author
@@ -373,13 +417,14 @@ INCOMPATIBILITIES WITH MOOSE
     "default" only supports coderefs, because doing otherwise is usually a
     mistake anyway.
 
-    "lazy_build" is not supported per se, but of course it will work if you
-    manually set all the options it implies.
+    "lazy_build" is not supported; you are instead encouraged to use the "is
+    =" 'lazy'> option supported by Moo and MooseX::AttributeShortcuts.
 
     "auto_deref" is not supported since the author considers it a bad idea.
 
-    "documentation" is not supported since it's a very poor replacement for
-    POD.
+    "documentation" will show up in a Moose metaclass created from your
+    class but is otherwise ignored. Then again, Moose ignors it as well, so
+    this is arguably not an incompatibility.
 
     Handling of warnings: when you "use Moo" we enable FATAL warnings. The
     nearest similar invocation for Moose would be:
