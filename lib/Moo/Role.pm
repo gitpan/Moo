@@ -12,6 +12,7 @@ our %INFO;
 
 sub import {
   my $target = caller;
+  my ($me) = @_;
   strictures->import;
   return if $INFO{$target}; # already exported into this package
   # get symbol table reference
@@ -23,42 +24,87 @@ sub import {
       Method::Generate::Accessor->new
     })->generate_method($target, $name, \%spec);
     push @{$INFO{$target}{attributes}||=[]}, $name, \%spec;
+    $me->_maybe_reset_handlemoose($target);
   };
+  # install before/after/around subs
+  foreach my $type (qw(before after around)) {
+    *{_getglob "${target}::${type}"} = sub {
+      require Class::Method::Modifiers;
+      push @{$INFO{$target}{modifiers}||=[]}, [ $type => @_ ];
+      $me->_maybe_reset_handlemoose($target);
+    };
+  }
+  *{_getglob "${target}::requires"} = sub {
+    push @{$INFO{$target}{requires}||=[]}, @_;
+    $me->_maybe_reset_handlemoose($target);
+  };
+  *{_getglob "${target}::with"} = sub {
+    $me->apply_roles_to_package($target, @_);
+    $me->_maybe_reset_handlemoose($target);
+  };
+  # grab all *non-constant* (stash slot is not a scalarref) subs present
+  # in the symbol table and store their refaddrs (no need to forcibly
+  # inflate constant subs into real subs) - also add '' to here (this
+  # is used later) with a map to the coderefs in case of copying or re-use
+  my @not_methods = ('', map { *$_{CODE}||() } grep !ref($_), values %$stash);
+  @{$INFO{$target}{not_methods}={}}{@not_methods} = @not_methods;
+  # a role does itself
+  $Role::Tiny::APPLIED_TO{$target} = { $target => undef };
+
   if ($INC{'Moo/HandleMoose.pm'}) {
     Moo::HandleMoose::inject_fake_metaclass_for($target);
   }
-  goto &Role::Tiny::import;
+}
+
+sub _maybe_reset_handlemoose {
+  my ($class, $target) = @_;
+  if ($INC{"Moo/HandleMoose.pm"}) {
+    Moo::HandleMoose::maybe_reinject_fake_metaclass_for($target);
+  }
 }
 
 sub _inhale_if_moose {
   my ($self, $role) = @_;
   _load_module($role);
-  if (!$INFO{$role} and $INC{"Moose.pm"}) {
-    if (my $meta = Class::MOP::class_of($role)) {
-      $INFO{$role}{methods} = {
-        map +($_ => $role->can($_)),
-          grep !$meta->get_method($_)->isa('Class::MOP::Method::Meta'),
-            $meta->get_method_list
-      };
-      $Role::Tiny::APPLIED_TO{$role} = {
-        map +($_->name => 1), $meta->calculate_all_roles
-      };
-      $INFO{$role}{requires} = [ $meta->get_required_method_list ];
-      $INFO{$role}{attributes} = [
-        map +($_ => $meta->get_attribute($_)), $meta->get_attribute_list
-      ];
-      my $mods = $INFO{$role}{modifiers} = [];
-      foreach my $type (qw(before after around)) {
-        my $map = $meta->${\"get_${type}_method_modifiers_map"};
-        foreach my $method (keys %$map) {
-          foreach my $mod (@{$map->{$method}}) {
-            push @$mods, [ $type => $method => $mod ];
-          }
+  my $meta;
+  if (!$INFO{$role}
+      and (
+        $INC{"Moose.pm"}
+        and $meta = Class::MOP::class_of($role)
+      )
+      or (
+        $INC{"Mouse.pm"}
+        and $meta = Mouse::Util::find_meta($role)
+     )
+  ) {
+    $INFO{$role}{methods} = {
+      map +($_ => $role->can($_)),
+        grep !$meta->get_method($_)->isa('Class::MOP::Method::Meta'),
+          $meta->get_method_list
+    };
+    $Role::Tiny::APPLIED_TO{$role} = {
+      map +($_->name => 1), $meta->calculate_all_roles
+    };
+    $INFO{$role}{requires} = [ $meta->get_required_method_list ];
+    $INFO{$role}{attributes} = [
+      map +($_ => $meta->get_attribute($_)), $meta->get_attribute_list
+    ];
+    my $mods = $INFO{$role}{modifiers} = [];
+    foreach my $type (qw(before after around)) {
+      # Mouse pokes its own internals so we have to fall back to doing
+      # the same thing in the absence of the Moose API method
+      my $map = $meta->${\(
+        $meta->can("get_${type}_method_modifiers_map")
+        or sub { shift->{"${type}_method_modifiers"} }
+      )};
+      foreach my $method (keys %$map) {
+        foreach my $mod (@{$map->{$method}}) {
+          push @$mods, [ $type => $method => $mod ];
         }
       }
-      require Class::Method::Modifiers if @$mods;
-      $INFO{$role}{inhaled_from_moose} = 1;
     }
+    require Class::Method::Modifiers if @$mods;
+    $INFO{$role}{inhaled_from_moose} = 1;
   }
 }
 
@@ -66,7 +112,8 @@ sub _maybe_make_accessors {
   my ($self, $role, $target) = @_;
   my $m;
   if ($INFO{$role}{inhaled_from_moose}
-      or $m = Moo->_accessor_maker_for($target)
+      or $INC{"Moo.pm"}
+      and $m = Moo->_accessor_maker_for($target)
       and ref($m) ne 'Method::Generate::Accessor') {
     $self->_make_accessors($role, $target);
   }
@@ -122,7 +169,8 @@ sub create_class_with_roles {
   $me->_inhale_if_moose($_) for @roles;
 
   my $m;
-  if ($m = Moo->_accessor_maker_for($superclass)
+  if ($INC{"Moo.pm"}
+      and $m = Moo->_accessor_maker_for($superclass)
       and ref($m) ne 'Method::Generate::Accessor') {
     # old fashioned way time.
     *{_getglob("${new_name}::ISA")} = [ $superclass ];

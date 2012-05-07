@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '0.091003'; # 0.91.3
+our $VERSION = '0.091004'; # 0.91.4
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -26,10 +26,15 @@ sub import {
       Moo->_constructor_maker_for($target)
          ->register_attribute_specs(%{$old->all_attribute_specs});
     }
+    $Moo::HandleMoose::MOUSE{$target} = [
+      grep defined, map Mouse::Util::find_meta($_), @_
+    ] if $INC{"Mouse.pm"};
+    $class->_maybe_reset_handlemoose($target);
   };
   _install_coderef "${target}::with" => "Moo::with" => sub {
     require Moo::Role;
     Moo::Role->apply_roles_to_package($target, $_[0]);
+    $class->_maybe_reset_handlemoose($target);
   };
   $MAKERS{$target} = {};
   _install_coderef "${target}::has" => "Moo::has" => sub {
@@ -38,6 +43,7 @@ sub import {
           ->register_attribute_specs($name, \%spec);
     $class->_accessor_maker_for($target)
           ->generate_method($target, $name, \%spec);
+    $class->_maybe_reset_handlemoose($target);
   };
   foreach my $type (qw(before after around)) {
     _install_coderef "${target}::${type}" => "Moo::${type}" => sub {
@@ -53,6 +59,13 @@ sub import {
   }
   if ($INC{'Moo/HandleMoose.pm'}) {
     Moo::HandleMoose::inject_fake_metaclass_for($target);
+  }
+}
+
+sub _maybe_reset_handlemoose {
+  my ($class, $target) = @_;
+  if ($INC{"Moo/HandleMoose.pm"}) {
+    Moo::HandleMoose::maybe_reinject_fake_metaclass_for($target);
   }
 }
 
@@ -221,8 +234,13 @@ L<Moose> everywhere.
 
 Extending a L<Moose> class or consuming a L<Moose::Role> should also work.
 
+So should extending a L<Mouse> class or consuming a L<Mouse::Role>.
+
 This means that there is no need for anything like L<Any::Moose> for Moo
-code - Moo and Moose code should simply interoperate without problem.
+code - Moo and Moose code should simply interoperate without problem. To
+handle L<Mouse> code, you'll likely need an empty Moo role or class consuming
+or extending the L<Mouse> stuff since it doesn't register true L<Moose>
+metaclasses like we do.
 
 However, these features are new as of 0.91.0 (0.091000) so while serviceable,
 they are absolutely certain to not be 100% yet; please do report bugs.
@@ -361,6 +379,12 @@ one should do
 
 L<Sub::Quote aware|/SUB QUOTE AWARE>
 
+Since L<Moo> does B<not> run the C<isa> check before C<coerce> if a coercion
+subroutine has been supplied, C<isa> checks are not structural to your code
+and can, if desired, be omitted on non-debug builds (although if this results
+in an uncaught bug causing your program to break, the L<Moo> authors guarantee
+nothing except that you get to keep both halves).
+
 If you want L<MooseX::Types> style named types, look at
 L<MooX::Types::MooseLike>.
 
@@ -386,9 +410,10 @@ do something like the following:
    $_[0] + 1 unless $_[0] % 2
  },
 
-Coerce does not require C<isa> to be defined, but since L<Moose> does
-require it, the metaclass inflation for coerce-alone is a trifle insane
-and if you attempt to subtype the result will almost certainly break.
+Note that L<Moo> will always fire your coercion - this is to permit
+isa entries to be used purely for bug trapping, whereas coercions are
+always structural to your code. We do, however, apply any supplied C<isa>
+check after the coercion has run to ensure that it returned a valid value.
 
 L<Sub::Quote aware|/SUB QUOTE AWARE>
 
@@ -577,8 +602,12 @@ C<is => 'lazy'> option supported by L<Moo> and L<MooseX::AttributeShortcuts>.
 C<auto_deref> is not supported since the author considers it a bad idea.
 
 C<documentation> will show up in a L<Moose> metaclass created from your class
-but is otherwise ignored. Then again, L<Moose> ignors it as well, so this
+but is otherwise ignored. Then again, L<Moose> ignores it as well, so this
 is arguably not an incompatibility.
+
+Since C<coerce> does not require C<isa> to be defined but L<Moose> does
+require it, the metaclass inflation for coerce-alone is a trifle insane
+and if you attempt to subtype the result will almost certainly break.
 
 Handling of warnings: when you C<use Moo> we enable FATAL warnings.  The nearest
 similar invocation for L<Moose> would be:

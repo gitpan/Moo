@@ -19,6 +19,14 @@ sub inject_all {
   @Moo::HandleMoose::FakeConstructor::ISA = 'Moose::Meta::Method::Constructor';
 }
 
+sub maybe_reinject_fake_metaclass_for {
+  my ($name) = @_;
+  our %DID_INJECT;
+  if (delete $DID_INJECT{$name}) {
+    inject_fake_metaclass_for($name);
+  }
+}
+
 sub inject_fake_metaclass_for {
   my ($name) = @_;
   require Class::MOP;
@@ -26,8 +34,6 @@ sub inject_fake_metaclass_for {
     $name, bless({ name => $name }, 'Moo::HandleMoose::FakeMetaClass')
   );
 }
-
-our %DID_INJECT;
 
 {
   package Moo::HandleMoose::FakeConstructor;
@@ -38,6 +44,7 @@ our %DID_INJECT;
 
 sub inject_real_metaclass_for {
   my ($name) = @_;
+  our %DID_INJECT;
   return Class::MOP::get_metaclass_by_name($name) if $DID_INJECT{$name};
   require Moose; require Moo; require Moo::Role;
   Class::MOP::remove_metaclass_by_name($name);
@@ -55,6 +62,7 @@ sub inject_real_metaclass_for {
       );
     }
   };
+    
   my %methods = %{Role::Tiny->_concrete_methods_of($name)};
   # needed to ensure the method body is stable and get things named
   Sub::Defer::undefer_sub($_) for grep defined, values %methods;
@@ -62,13 +70,15 @@ sub inject_real_metaclass_for {
   {
     # This local is completely not required for roles but harmless
     local @{_getstash($name)}{keys %methods};
+    my %seen_name;
     foreach my $name (@$attr_order) {
+      $seen_name{$name} = 1;
       my %spec = %{$attr_specs->{$name}};
       delete $spec{index};
       $spec{is} = 'ro' if $spec{is} eq 'lazy' or $spec{is} eq 'rwp';
       delete $spec{asserter};
       if (my $isa = $spec{isa}) {
-        $spec{isa} = do {
+        my $tc = $spec{isa} = do {
           if (my $mapped = $TYPE_MAP{$isa}) {
             $mapped->();
           } else {
@@ -77,7 +87,11 @@ sub inject_real_metaclass_for {
             );
           }
         };
-        die "Aaaargh" if $spec{coerce};
+        if (my $coerce = $spec{coerce}) {
+          $tc->coercion(Moose::Meta::TypeCoercion->new)
+             ->_compiled_type_coercion($coerce);
+          $spec{coerce} = 1;
+        }
       } elsif (my $coerce = $spec{coerce}) {
         my $attr = perlstring($name);
         my $tc = Moose::Meta::TypeConstraint->new(
@@ -86,12 +100,24 @@ sub inject_real_metaclass_for {
                       'my $r = $_[42]{'.$attr.'}; $_[42]{'.$attr.'} = 1; $r'
                    },
                  );
-         $tc->coercion(Moose::Meta::TypeCoercion->new)
-            ->_compiled_type_coercion($coerce);
-         $spec{isa} = $tc;
-         $spec{coerce} = 1;
+        $tc->coercion(Moose::Meta::TypeCoercion->new)
+           ->_compiled_type_coercion($coerce);
+        $spec{isa} = $tc;
+        $spec{coerce} = 1;
       }
       push @attrs, $meta->add_attribute($name => %spec);
+    }
+    foreach my $mouse (do { our %MOUSE; @{$MOUSE{$name}||[]} }) {
+      foreach my $attr ($mouse->get_all_attributes) {
+        my %spec = %{$attr};
+        delete @spec{qw(
+          associated_class associated_methods __METACLASS__
+          provides curries
+        )};
+        my $name = delete $spec{name};
+        next if $seen_name{$name}++;
+        push @attrs, $meta->add_attribute($name => %spec);
+      }
     }
   }
   if ($am_role) {

@@ -24,4 +24,4 @@ requires:
   Module::Runtime: 0.013
   Role::Tiny: 1.001001
   strictures: 1.001001
-version: 0.091003
+version: 0.091004

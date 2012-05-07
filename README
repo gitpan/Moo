@@ -80,8 +80,13 @@ Moo and Moose - NEW, EXPERIMENTAL
 
     Extending a Moose class or consuming a Moose::Role should also work.
 
+    So should extending a Mouse class or consuming a Mouse::Role.
+
     This means that there is no need for anything like Any::Moose for Moo
-    code - Moo and Moose code should simply interoperate without problem.
+    code - Moo and Moose code should simply interoperate without problem. To
+    handle Mouse code, you'll likely need an empty Moo role or class
+    consuming or extending the Mouse stuff since it doesn't register true
+    Moose metaclasses like we do.
 
     However, these features are new as of 0.91.0 (0.091000) so while
     serviceable, they are absolutely certain to not be 100% yet; please do
@@ -211,6 +216,12 @@ IMPORTED SUBROUTINES
 
       Sub::Quote aware
 
+      Since Moo does not run the "isa" check before "coerce" if a coercion
+      subroutine has been supplied, "isa" checks are not structural to your
+      code and can, if desired, be omitted on non-debug builds (although if
+      this results in an uncaught bug causing your program to break, the Moo
+      authors guarantee nothing except that you get to keep both halves).
+
       If you want MooseX::Types style named types, look at
       MooX::Types::MooseLike.
 
@@ -236,10 +247,11 @@ IMPORTED SUBROUTINES
          $_[0] + 1 unless $_[0] % 2
        },
 
-      Coerce does not require "isa" to be defined, but since Moose does
-      require it, the metaclass inflation for coerce-alone is a trifle
-      insane and if you attempt to subtype the result will almost certainly
-      break.
+      Note that Moo will always fire your coercion - this is to permit isa
+      entries to be used purely for bug trapping, whereas coercions are
+      always structural to your code. We do, however, apply any supplied
+      "isa" check after the coercion has run to ensure that it returned a
+      valid value.
 
       Sub::Quote aware
 
@@ -423,8 +435,12 @@ INCOMPATIBILITIES WITH MOOSE
     "auto_deref" is not supported since the author considers it a bad idea.
 
     "documentation" will show up in a Moose metaclass created from your
-    class but is otherwise ignored. Then again, Moose ignors it as well, so
+    class but is otherwise ignored. Then again, Moose ignores it as well, so
     this is arguably not an incompatibility.
+
+    Since "coerce" does not require "isa" to be defined but Moose does
+    require it, the metaclass inflation for coerce-alone is a trifle insane
+    and if you attempt to subtype the result will almost certainly break.
 
     Handling of warnings: when you "use Moo" we enable FATAL warnings. The
     nearest similar invocation for Moose would be:
