@@ -184,14 +184,11 @@ IMPORTED SUBROUTINES
 
     * is
 
-      required, may be "ro", "rw", "lazy" or "rwp".
+      required, may be "ro", "lazy", "rwp" or "rw".
 
       "ro" generates an accessor that dies if you attempt to write to it -
       i.e. a getter only - by defaulting "reader" to the name of the
       attribute.
-
-      "rw" generates a normal getter/setter by defauting "accessor" to the
-      name of the attribute.
 
       "lazy" generates a reader like "ro", but also sets "lazy" to 1 and
       "builder" to "_build_${attribute_name}" to allow on-demand generated
@@ -203,6 +200,9 @@ IMPORTED SUBROUTINES
       "_set_${attribute_name}" for attributes that are designed to be
       written from inside of the class, but read-only from outside. This
       feature comes from MooseX::AttributeShortcuts.
+
+      "rw" generates a normal getter/setter by defaulting "accessor" to the
+      name of the attribute.
 
     * isa
 

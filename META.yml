@@ -20,8 +20,7 @@ no_index:
     - inc
 requires:
   Class::Method::Modifiers: 1.07
-  Devel::GlobalDestruction: 0.05
   Module::Runtime: 0.013
   Role::Tiny: 1.001001
   strictures: 1.001001
-version: 0.091004
+version: 0.091005

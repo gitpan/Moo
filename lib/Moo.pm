@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '0.091004'; # 0.91.4
+our $VERSION = '0.091005'; # 0.91.5
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -30,6 +30,7 @@ sub import {
       grep defined, map Mouse::Util::find_meta($_), @_
     ] if $INC{"Mouse.pm"};
     $class->_maybe_reset_handlemoose($target);
+    return;
   };
   _install_coderef "${target}::with" => "Moo::with" => sub {
     require Moo::Role;
@@ -44,11 +45,13 @@ sub import {
     $class->_accessor_maker_for($target)
           ->generate_method($target, $name, \%spec);
     $class->_maybe_reset_handlemoose($target);
+    return;
   };
   foreach my $type (qw(before after around)) {
     _install_coderef "${target}::${type}" => "Moo::${type}" => sub {
       require Class::Method::Modifiers;
       _install_modifier($target, $type, @_);
+      return;
     };
   }
   {
@@ -348,13 +351,10 @@ The options for C<has> are as follows:
 
 =item * is
 
-B<required>, may be C<ro>, C<rw>, C<lazy> or C<rwp>.
+B<required>, may be C<ro>, C<lazy>, C<rwp> or C<rw>.
 
 C<ro> generates an accessor that dies if you attempt to write to it - i.e.
 a getter only - by defaulting C<reader> to the name of the attribute.
-
-C<rw> generates a normal getter/setter by defauting C<accessor> to the
-name of the attribute.
 
 C<lazy> generates a reader like C<ro>, but also sets C<lazy> to 1 and
 C<builder> to C<_build_${attribute_name}> to allow on-demand generated
@@ -366,6 +366,9 @@ C<rwp> generates a reader like C<ro>, but also sets C<writer> to
 C<_set_${attribute_name}> for attributes that are designed to be written
 from inside of the class, but read-only from outside.
 This feature comes from L<MooseX::AttributeShortcuts>.
+
+C<rw> generates a normal getter/setter by defaulting C<accessor> to the
+name of the attribute.
 
 =item * isa
 
