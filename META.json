@@ -33,13 +33,13 @@
       },
       "runtime" : {
          "requires" : {
-            "Class::Method::Modifiers" : "1.07",
-            "Module::Runtime" : "0.013",
+            "Class::Method::Modifiers" : "1.04",
+            "Module::Runtime" : "0.012",
             "Role::Tiny" : "1.001001",
             "strictures" : "1.001001"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "0.091005"
+   "version" : "0.091006"
 }

@@ -19,8 +19,8 @@ no_index:
     - t
     - inc
 requires:
-  Class::Method::Modifiers: 1.07
-  Module::Runtime: 0.013
+  Class::Method::Modifiers: 1.04
+  Module::Runtime: 0.012
   Role::Tiny: 1.001001
   strictures: 1.001001
-version: 0.091005
+version: 0.091006
