@@ -35,11 +35,11 @@
          "requires" : {
             "Class::Method::Modifiers" : "1.04",
             "Module::Runtime" : "0.012",
-            "Role::Tiny" : "1.001001",
+            "Role::Tiny" : "1.001003",
             "strictures" : "1.001001"
          }
       }
    },
    "release_status" : "stable",
-   "version" : "0.091007"
+   "version" : "0.091008"
 }

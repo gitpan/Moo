@@ -418,9 +418,21 @@ INCOMPATIBILITIES WITH MOOSE
 
     will return an appropriate metaclass pre-populated by Moo.
 
-    No support for "super", "override", "inner", or "augment" - override can
-    be handled by around albeit with a little more typing, and the author
-    considers augment to be a bad idea.
+    No support for "super", "override", "inner", or "augment" - the author
+    considers augment to be a bad idea, and override can be translated:
+
+      override foo => sub {
+        ...
+        super();
+        ...
+      };
+
+      around foo => sub {
+        my ($orig, $self) = (shift, shift);
+        ...
+        $self->$orig(@_);
+        ...
+      };
 
     The "dump" method is not provided by default. The author suggests
     loading Devel::Dwarn into "main::" (via "perl -MDevel::Dwarn ..." for

@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '0.091007'; # 0.91.7
+our $VERSION = '0.091008'; # 0.91.8
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -34,7 +34,7 @@ sub import {
   };
   _install_coderef "${target}::with" => "Moo::with" => sub {
     require Moo::Role;
-    Moo::Role->apply_roles_to_package($target, $_[0]);
+    Moo::Role->apply_roles_to_package($target, @_);
     $class->_maybe_reset_handlemoose($target);
   };
   $MAKERS{$target} = {};
@@ -588,9 +588,21 @@ provide a metaprotocol. However, if you load L<Moose>, then
 
 will return an appropriate metaclass pre-populated by L<Moo>.
 
-No support for C<super>, C<override>, C<inner>, or C<augment> - override can
-be handled by around albeit with a little more typing, and the author considers
-augment to be a bad idea.
+No support for C<super>, C<override>, C<inner>, or C<augment> - the author
+considers augment to be a bad idea, and override can be translated:
+
+  override foo => sub {
+    ...
+    super();
+    ...
+  };
+
+  around foo => sub {
+    my ($orig, $self) = (shift, shift);
+    ...
+    $self->$orig(@_);
+    ...
+  };
 
 The C<dump> method is not provided by default. The author suggests loading
 L<Devel::Dwarn> into C<main::> (via C<perl -MDevel::Dwarn ...> for example) and

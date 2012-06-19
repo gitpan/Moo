@@ -43,6 +43,7 @@ t/demolish-global_destruction.t
 t/extends-non-moo.t
 t/global-destruction-helper.pl
 t/has-before-extends.t
+t/has-plus.t
 t/lib/base_class.pm
 t/lib/sub_class.pm
 t/load_module.t
