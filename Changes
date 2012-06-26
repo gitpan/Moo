@@ -1,3 +1,13 @@
+0.091010 - 2012-06-26
+  - isa checks on builders
+  - additional quote_sub docs
+  - remove multi-populate code to fix exists/defined new() bug
+  - document move to #moose and include repository metadata
+  - no Moo and no Moo::Role
+  - squelch used only once warnings for $Moo::HandleMoose::MOUSE
+  - MooClass->meta
+  - subconstructor handling for Moose classes
+
 0.091009 - 2012-06-20
   - squelch redefine warnings in the coderef installation code
 

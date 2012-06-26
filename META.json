@@ -41,5 +41,10 @@
       }
    },
    "release_status" : "stable",
-   "version" : "0.091009"
+   "resources" : {
+      "repository" : {
+         "url" : "git://git.shadowcat.co.uk/gitmo/Moo.git"
+      }
+   },
+   "version" : "0.091010"
 }

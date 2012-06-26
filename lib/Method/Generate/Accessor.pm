@@ -43,6 +43,18 @@ sub generate_method {
   if (($spec->{trigger}||0) eq 1) {
     $spec->{trigger} = quote_sub('shift->_trigger_'.$name.'(@_)');
   }
+  if (exists $spec->{default}) {
+    my $default = $spec->{default};
+    unless (ref $default) {
+      die "Invalid default $default";
+    }
+    if (ref $default ne 'CODE') {
+      unless (eval { \&$default }) {
+        die "Invalid default $default";
+      }
+    }
+  }
+
   my %methods;
   if (my $reader = $spec->{reader}) {
     if (our $CAN_HAZ_XS && $self->is_simple_get($name, $spec)) {
@@ -173,7 +185,12 @@ sub _generate_get {
     'do { '.$self->_generate_use_default(
       '$_[0]', $name, $spec,
       $self->_generate_simple_has('$_[0]', $name, $spec),
-    ).'; '.$simple.' }';
+    ).'; '
+    .($spec->{isa}
+      ?($self->_generate_isa_check($name, $simple, $spec->{isa}).'; ')
+      :''
+    )
+    .$simple.' }';
   }
 }
 
@@ -384,11 +401,6 @@ sub _generate_populate_set {
       )
       ."    }\n";
   }
-}
-
-sub generate_multi_set {
-  my ($self, $me, $to_set, $from) = @_;
-  "\@{${me}}{qw(${\join ' ', @$to_set})} = $from";
 }
 
 sub _generate_core_set {
