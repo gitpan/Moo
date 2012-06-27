@@ -494,7 +494,9 @@ INCOMPATIBILITIES WITH MOOSE
     your class.
 
 SUPPORT
-    IRC: #moose on irc.perl.org
+    Users' IRC: #moose on irc.perl.org
+
+    Development and contribution IRC: #web-simple on irc.perl.org
 
 AUTHOR
     mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>

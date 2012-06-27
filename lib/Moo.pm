@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '0.091010'; # 0.91.10
+our $VERSION = '0.091011'; # 0.91.11
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -678,7 +678,9 @@ on your class.
 
 =head1 SUPPORT
 
-IRC: #moose on irc.perl.org
+Users' IRC: #moose on irc.perl.org
+
+Development and contribution IRC: #web-simple on irc.perl.org
 
 =head1 AUTHOR
 
