@@ -5,6 +5,7 @@ use Moo::_Utils;
 use base qw(Moo::Object);
 use Sub::Quote;
 use B 'perlstring';
+use Scalar::Util 'blessed';
 BEGIN {
   our $CAN_HAZ_XS =
     !$ENV{MOO_XS_DISABLE}
@@ -45,14 +46,12 @@ sub generate_method {
   }
   if (exists $spec->{default}) {
     my $default = $spec->{default};
-    unless (ref $default) {
-      die "Invalid default $default";
-    }
-    if (ref $default ne 'CODE') {
-      unless (eval { \&$default }) {
-        die "Invalid default $default";
-      }
-    }
+    my $invalid = "Invalid default '" . overload::StrVal($default)
+      . "' for $into->$name - not a coderef";
+    die "$invalid or code-convertible object"
+      unless ref $default and (ref $default eq 'CODE' or blessed($default));
+    die "$invalid and could not be converted to a coderef: $@"
+      if !eval { \&$default };
   }
 
   my %methods;
