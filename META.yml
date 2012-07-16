@@ -25,4 +25,4 @@ requires:
   strictures: 1.001001
 resources:
   repository: git://git.shadowcat.co.uk/gitmo/Moo.git
-version: 0.091013
+version: 0.091014
