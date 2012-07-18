@@ -284,7 +284,10 @@ sub generate_coerce {
 
 sub _generate_coerce {
   my ($self, $name, $value, $coerce) = @_;
-  $self->_generate_call_code($name, 'coerce', "${value}", $coerce);
+  $self->_generate_die_prefix(
+    "coercion for ${\perlstring($name)} failed: ",
+    $self->_generate_call_code($name, 'coerce', "${value}", $coerce)
+  );
 }
  
 sub generate_trigger {
@@ -306,9 +309,23 @@ sub generate_isa_check {
   ($code, delete $self->{captures});
 }
 
+sub _generate_die_prefix {
+  my ($self, $prefix, $inside) = @_;
+  "do {\n"
+  .'  my $sig_die = $SIG{__DIE__} || sub { die $_[0] };'."\n"
+  .'  local $SIG{__DIE__} = sub {'."\n"
+  .'    $sig_die->(ref($_[0]) ? $_[0] : '.perlstring($prefix).'.$_[0]);'."\n"
+  .'  };'."\n"
+  .$inside
+  ."}\n"
+}
+
 sub _generate_isa_check {
   my ($self, $name, $value, $check) = @_;
-  $self->_generate_call_code($name, 'isa_check', $value, $check);
+  $self->_generate_die_prefix(
+    "isa check for ${\perlstring($name)} failed: ",
+    $self->_generate_call_code($name, 'isa_check', $value, $check)
+  );
 }
 
 sub _generate_call_code {

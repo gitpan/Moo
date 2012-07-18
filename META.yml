@@ -18,6 +18,7 @@ no_index:
   directory:
     - t
     - inc
+    - xt
 requires:
   Class::Method::Modifiers: 1.04
   Module::Runtime: 0.012
@@ -25,4 +26,4 @@ requires:
   strictures: 1.001001
 resources:
   repository: git://git.shadowcat.co.uk/gitmo/Moo.git
-version: 0.091014
+version: 1.000000

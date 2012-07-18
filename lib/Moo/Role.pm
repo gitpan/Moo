@@ -99,7 +99,36 @@ sub _inhale_if_moose {
     };
     $INFO{$role}{requires} = [ $meta->get_required_method_list ];
     $INFO{$role}{attributes} = [
-      map +($_ => $meta->get_attribute($_)), $meta->get_attribute_list
+      map +($_ => do {
+        my $spec = { %{$meta->get_attribute($_)} };
+
+        if ($spec->{isa}) {
+
+          my $get_constraint = do {
+            my $pkg = $meta->isa('Mouse::Meta::Role')
+                        ? 'Mouse::Util::TypeConstraints'
+                        : 'Moose::Util::TypeConstraints';
+            _load_module($pkg);
+            $pkg->can('find_or_create_isa_type_constraint');
+          };
+
+          my $tc = $get_constraint->($spec->{isa});
+          my $check = $tc->_compiled_type_constraint;
+
+          $spec->{isa} = sub {
+            &$check or die "Type constraint failed for $_[0]"
+          };
+
+          if ($spec->{coerce}) {
+
+             # Mouse has _compiled_type_coercion straight on the TC object
+             $spec->{coerce} = $tc->${\(
+               $tc->can('coercion')||sub { $_[0] }
+             )}->_compiled_type_coercion;
+          }
+        }
+        $spec;
+      }), $meta->get_attribute_list
     ];
     my $mods = $INFO{$role}{modifiers} = [];
     foreach my $type (qw(before after around)) {

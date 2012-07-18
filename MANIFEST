@@ -70,6 +70,10 @@ xt/jenga.t
 xt/lib/ExampleMooRoleWithAttribute.pm
 xt/lib/ExampleMooseRoleOne.pm
 xt/lib/ExampleMooseRoleTwo.pm
+xt/lib/withautoclean/Class.pm
+xt/lib/withautoclean/R1.pm
+xt/moo-consume-moose-role-coerce.t
+xt/moo-consume-mouse-role-coerce.t
 xt/moo-does-moose-role.t
 xt/moo-role-types.t
 xt/moo-roles-into-moose-class-attr-override-with-autoclean.t
@@ -84,6 +88,7 @@ xt/moose-override-attribute-with-plus-syntax.t
 xt/moox-types.t
 xt/more-jenga.t
 xt/super-jenga.t
+xt/withautoclean.t
 META.yml                                 Module YAML meta-data (added by MakeMaker)
 META.json                                Module JSON meta-data (added by MakeMaker)
 README                                   README file (added by Distar)

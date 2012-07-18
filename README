@@ -45,17 +45,29 @@ SYNOPSIS
      say $full->pounds;
 
 DESCRIPTION
-    This module is an extremely light-weight, high-performance Moose
-    replacement. It also avoids depending on any XS modules to allow simple
-    deployments. The name "Moo" is based on the idea that it provides almost
-    -but not quite- two thirds of Moose.
+    This module is an extremely light-weight subset of Moose optimised for
+    rapid startup and pay for what you use.
 
-    Unlike "Mouse" this module does not aim at full Moose compatibility. See
-    "INCOMPATIBILITIES" for more details.
+    It also avoids depending on any XS modules to allow simple deployments.
+    The name "Moo" is based on the idea that it provides almost -but not
+    quite- two thirds of Moose.
+
+    Unlike "Mouse" this module does not aim at full compatibility with
+    Moose's surface syntax, preferring instead of provide full
+    interoperability via the metaclass inflation capabilites described in
+    "MOO AND MOOSE".
+
+    For a full list of the minor differences between Moose and Moo's surface
+    syntax, see "INCOMPATIBILITIES".
 
 WHY MOO EXISTS
     If you want a full object system with a rich Metaprotocol, Moose is
     already wonderful.
+
+    However, sometimes you're writing a command line script or a CGI script
+    where fast startup is essential, or code designed to be deployed as a
+    single file via App::FatPacker, or you're writing a CPAN module and you
+    want it to be usable by people with those constraints.
 
     I've tried several times to use Mouse but it's 3x the size of Moo and
     takes longer to load than most of my Moo based CGI scripts take to run.
@@ -64,42 +76,45 @@ WHY MOO EXISTS
     you want "as little as possible" - which means "no metaprotocol", which
     is what Moo provides.
 
-    By Moo 1.0 I intend to have Moo's equivalent of Any::Moose built in - if
-    Moose gets loaded, any Moo class or role will act as a Moose equivalent
-    if treated as such.
+    Better still, if you install and load Moose, we set up metaclasses for
+    your Moo classes and Moo::Role roles, so you can use them in Moose code
+    without ever noticing that some of your codebase is using Moo.
 
     Hence - Moo exists as its name - Minimal Object Orientation - with a
     pledge to make it smooth to upgrade to Moose when you need more than
     minimal features.
 
-Moo and Moose - NEW, EXPERIMENTAL
+MOO AND MOOSE
     If Moo detects Moose being loaded, it will automatically register
     metaclasses for your Moo and Moo::Role packages, so you should be able
-    to use them in Moose code without it ever realising you aren't using
+    to use them in Moose code without anybody ever noticing you aren't using
     Moose everywhere.
 
-    Extending a Moose class or consuming a Moose::Role should also work.
+    Extending a Moose class or consuming a Moose::Role will also work.
 
-    So should extending a Mouse class or consuming a Mouse::Role.
+    So will extending a Mouse class or consuming a Mouse::Role - but note
+    that we don't provide Mouse metaclasses or metaroles so the other way
+    around doesn't work. This feature exists for Any::Moose users porting to
+    Moo, enabling Mouse users to use Moo classes is not a priority for us.
 
     This means that there is no need for anything like Any::Moose for Moo
     code - Moo and Moose code should simply interoperate without problem. To
     handle Mouse code, you'll likely need an empty Moo role or class
     consuming or extending the Mouse stuff since it doesn't register true
-    Moose metaclasses like we do.
+    Moose metaclasses like Moo does.
 
-    However, these features are new as of 0.91.0 (0.091000) so while
-    serviceable, they are absolutely certain to not be 100% yet; please do
-    report bugs.
+    If you want types to be upgraded to the Moose types, use
+    MooX::Types::MooseLike and install the MooseX::Types library to match
+    the MooX::Types::MooseLike library you're using - Moo will load the
+    MooseX::Types library and use that type for the newly created metaclass.
 
     If you need to disable the metaclass creation, add:
 
       no Moo::sification;
 
     to your code before Moose is loaded, but bear in mind that this switch
-    is currently global and turns the mechanism off entirely, so don't put
-    this in library code, only in a top level script as a temporary measure
-    while you send a bug report.
+    is currently global and turns the mechanism off entirely so don't put
+    this in library code.
 
 IMPORTED METHODS
   new
@@ -522,6 +537,8 @@ CONTRIBUTORS
 
     Mithaldu - Christian Walde (cpan:MITHALDU)
     <walde.christian@googlemail.com>
+
+    ilmari - Dagfinn Ilmari Mannsåker (cpan:ILMARI) <ilmari@ilmari.org>
 
 COPYRIGHT
     Copyright (c) 2010-2011 the Moo "AUTHOR" and "CONTRIBUTORS" as listed

@@ -16,7 +16,8 @@
    "no_index" : {
       "directory" : [
          "t",
-         "inc"
+         "inc",
+         "xt"
       ]
    },
    "prereqs" : {
@@ -46,5 +47,5 @@
          "url" : "git://git.shadowcat.co.uk/gitmo/Moo.git"
       }
    },
-   "version" : "0.091014"
+   "version" : "1.000000"
 }
