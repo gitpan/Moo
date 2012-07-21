@@ -79,6 +79,7 @@ xt/moo-role-types.t
 xt/moo-roles-into-moose-class-attr-override-with-autoclean.t
 xt/moo-roles-into-moose-class.t
 xt/moose-accessor-isa.t
+xt/moose-autoclean-lazy-attr-builders.t
 xt/moose-consume-moo-role-no-moo-loaded.t
 xt/moose-does-moo-role.t
 xt/moose-lazy.t

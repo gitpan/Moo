@@ -5,7 +5,6 @@ SYNOPSIS
      package Cat::Food;
 
      use Moo;
-     use Sub::Quote;
 
      sub feed_lion {
        my $self = shift;
@@ -27,12 +26,12 @@ SYNOPSIS
 
      has pounds => (
        is  => 'rw',
-       isa => quote_sub q{ die "$_[0] is too much cat food!" unless $_[0] < 15 },
+       isa => sub { die "$_[0] is too much cat food!" unless $_[0] < 15 },
      );
 
      1;
 
-    and else where
+    And elsewhere:
 
      my $full = Cat::Food->new(
         taste  => 'DELICIOUS.',
@@ -46,16 +45,15 @@ SYNOPSIS
 
 DESCRIPTION
     This module is an extremely light-weight subset of Moose optimised for
-    rapid startup and pay for what you use.
+    rapid startup and "pay only for what you use".
 
     It also avoids depending on any XS modules to allow simple deployments.
-    The name "Moo" is based on the idea that it provides almost -but not
-    quite- two thirds of Moose.
+    The name "Moo" is based on the idea that it provides almost -- but not
+    quite -- two thirds of Moose.
 
-    Unlike "Mouse" this module does not aim at full compatibility with
-    Moose's surface syntax, preferring instead of provide full
-    interoperability via the metaclass inflation capabilites described in
-    "MOO AND MOOSE".
+    Unlike Mouse this module does not aim at full compatibility with Moose's
+    surface syntax, preferring instead of provide full interoperability via
+    the metaclass inflation capabilites described in "MOO AND MOOSE".
 
     For a full list of the minor differences between Moose and Moo's surface
     syntax, see "INCOMPATIBILITIES".
@@ -73,14 +71,14 @@ WHY MOO EXISTS
     takes longer to load than most of my Moo based CGI scripts take to run.
 
     If you don't want Moose, you don't want "less metaprotocol" like Mouse,
-    you want "as little as possible" - which means "no metaprotocol", which
+    you want "as little as possible" -- which means "no metaprotocol", which
     is what Moo provides.
 
     Better still, if you install and load Moose, we set up metaclasses for
     your Moo classes and Moo::Role roles, so you can use them in Moose code
     without ever noticing that some of your codebase is using Moo.
 
-    Hence - Moo exists as its name - Minimal Object Orientation - with a
+    Hence, Moo exists as its name -- Minimal Object Orientation -- with a
     pledge to make it smooth to upgrade to Moose when you need more than
     minimal features.
 
@@ -95,7 +93,7 @@ MOO AND MOOSE
     So will extending a Mouse class or consuming a Mouse::Role - but note
     that we don't provide Mouse metaclasses or metaroles so the other way
     around doesn't work. This feature exists for Any::Moose users porting to
-    Moo, enabling Mouse users to use Moo classes is not a priority for us.
+    Moo; enabling Mouse users to use Moo classes is not a priority for us.
 
     This means that there is no need for anything like Any::Moose for Moo
     code - Moo and Moose code should simply interoperate without problem. To
@@ -115,6 +113,24 @@ MOO AND MOOSE
     to your code before Moose is loaded, but bear in mind that this switch
     is currently global and turns the mechanism off entirely so don't put
     this in library code.
+
+MOO VERSUS ANY::MOOSE
+    Any::Moose will load Mouse normally, and Moose in a program using Moose
+    - which theoretically allows you to get the startup time of Mouse
+    without disadvantaging Moose users.
+
+    Sadly, this doesn't entirely work, since the selection is load order
+    dependent - Moo's metaclass inflation system explained above in "MOO AND
+    MOOSE" is significantly more reliable.
+
+    So if you want to write a CPAN module that loads fast or has only pure
+    perl dependencies but is also fully usable by Moose users, you should be
+    using Moo.
+
+    For a full explanation, see the article
+    <http://shadow.cat/blog/matt-s-trout/moo-versus-any-moose> which
+    explains the differing strategies in more detail and provides a direct
+    example of where Moo succeeds and Any::Moose fails.
 
 IMPORTED METHODS
   new
@@ -221,11 +237,11 @@ IMPORTED SUBROUTINES
 
     * isa
 
-      Takes a coderef which is meant to validate the attribute. Unlike Moose
-      Moo does not include a basic type system, so instead of doing "isa =>
-      'Num'", one should do
+      Takes a coderef which is meant to validate the attribute. Unlike
+      Moose, Moo does not include a basic type system, so instead of doing
+      "isa => 'Num'", one should do
 
-       isa => quote_sub q{
+       isa => sub {
          die "$_[0] is not a number!" unless looks_like_number $_[0]
        },
 
@@ -258,11 +274,11 @@ IMPORTED SUBROUTINES
       Takes a coderef which is meant to coerce the attribute. The basic idea
       is to do something like the following:
 
-       coerce => quote_sub q{
+       coerce => sub {
          $_[0] + 1 unless $_[0] % 2
        },
 
-      Note that Moo will always fire your coercion - this is to permit isa
+      Note that Moo will always fire your coercion: this is to permit "isa"
       entries to be used purely for bug trapping, whereas coercions are
       always structural to your code. We do, however, apply any supplied
       "isa" check after the coercion has run to ensure that it returned a
@@ -304,7 +320,7 @@ IMPORTED SUBROUTINES
 
       Sub::Quote aware
 
-    * default
+    * "default"
 
       Takes a coderef which will get called with $self as its only argument
       to populate an attribute if no value is supplied to the constructor -
@@ -317,7 +333,7 @@ IMPORTED SUBROUTINES
 
       Sub::Quote aware
 
-    * predicate
+    * "predicate"
 
       Takes a method name which will return true if an attribute has a
       value.
@@ -327,7 +343,7 @@ IMPORTED SUBROUTINES
       underscore, or <_has_${attr_name_without_the_underscore}> if it does.
       This feature comes from MooseX::AttributeShortcuts.
 
-    * builder
+    * "builder"
 
       Takes a method name which will be called to create the attribute -
       functions exactly like default except that instead of calling
@@ -342,7 +358,7 @@ IMPORTED SUBROUTINES
       "_build_${attr_name}". This feature comes from
       MooseX::AttributeShortcuts.
 
-    * clearer
+    * "clearer"
 
       Takes a method name which will clear the attribute.
 
@@ -351,35 +367,35 @@ IMPORTED SUBROUTINES
       underscore, or <_clear_${attr_name_without_the_underscore}> if it
       does. This feature comes from MooseX::AttributeShortcuts.
 
-    * lazy
+    * "lazy"
 
       Boolean. Set this if you want values for the attribute to be grabbed
       lazily. This is usually a good idea if you have a "builder" which
       requires another attribute to be set.
 
-    * required
+    * "required"
 
       Boolean. Set this if the attribute must be passed on instantiation.
 
-    * reader
+    * "reader"
 
       The value of this attribute will be the name of the method to get the
       value of the attribute. If you like Java style methods, you might set
       this to "get_foo"
 
-    * writer
+    * "writer"
 
       The value of this attribute will be the name of the method to set the
       value of the attribute. If you like Java style methods, you might set
-      this to "set_foo"
+      this to "set_foo".
 
-    * weak_ref
+    * "weak_ref"
 
       Boolean. Set this if you want the reference that the attribute
       contains to be weakened; use this when circular references are
       possible, which will cause leaks.
 
-    * init_arg
+    * "init_arg"
 
       Takes the name of the key to look for at instantiation time of the
       object. A common use of this is to make an underscored attribute have
@@ -409,8 +425,40 @@ SUB QUOTE AWARE
     "inlineable," giving us a handy, XS-free speed boost. Any option that is
     Sub::Quote aware can take advantage of this.
 
+    To do this, you can write
+
+      use Moo;
+      use Sub::Quote;
+
+      has foo => (
+        is => quote_sub(q{ die "Not <3" unless $_[0] < 3 })
+      );
+
+    which will be inlined as
+
+      do {
+        local @_ = ($_[0]->{foo});
+        die "Not <3" unless $_[0] < 3;
+      }
+
+    or to avoid localizing @_,
+
+      has foo => (
+        is => quote_sub(q{ my ($val) = @_; die "Not <3" unless $val < 3 })
+      );
+
+    which will be inlined as
+
+      do {
+        my ($val) = ($_[0]->{foo});
+        die "Not <3" unless $val < 3;
+      }
+
+    See Sub::Quote for more information, including how to pass lexical
+    captures that will also be compiled into the subroutine.
+
 INCOMPATIBILITIES WITH MOOSE
-    There is no built in type system. "isa" is verified with a coderef, if
+    There is no built-in type system. "isa" is verified with a coderef; if
     you need complex types, just make a library of coderefs, or better yet,
     functions that return quoted subs. MooX::Types::MooseLike provides a
     similar API to MooseX::Types::Moose so that you can write
@@ -457,7 +505,7 @@ INCOMPATIBILITIES WITH MOOSE
     mistake anyway.
 
     "lazy_build" is not supported; you are instead encouraged to use the "is
-    =" 'lazy'> option supported by Moo and MooseX::AttributeShortcuts.
+    => 'lazy'" option supported by Moo and MooseX::AttributeShortcuts.
 
     "auto_deref" is not supported since the author considers it a bad idea.
 
@@ -466,7 +514,7 @@ INCOMPATIBILITIES WITH MOOSE
     this is arguably not an incompatibility.
 
     Since "coerce" does not require "isa" to be defined but Moose does
-    require it, the metaclass inflation for coerce-alone is a trifle insane
+    require it, the metaclass inflation for coerce alone is a trifle insane
     and if you attempt to subtype the result will almost certainly break.
 
     Handling of warnings: when you "use Moo" we enable FATAL warnings. The
