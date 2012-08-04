@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '1.000001'; # 1.0.1
+our $VERSION = '1.000002'; # 1.0.2
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -162,7 +162,7 @@ sub _constructor_maker_for {
           .'        '.$class.'->_constructor_maker_for($class,'.perlstring($target).');'."\n"
           .'        return $class->new(@_)'.";\n"
           .'      } elsif ($INC{"Moose.pm"} and my $meta = Class::MOP::get_metaclass_by_name($class)) {'."\n"
-          .'        return $meta->new_object(@_);'."\n"
+          .'        return $meta->new_object($class->BUILDARGS(@_));'."\n"
           .'      }'."\n"
         ),
       )
@@ -629,7 +629,8 @@ To do this, you can write
   use Sub::Quote;
 
   has foo => (
-    is => quote_sub(q{ die "Not <3" unless $_[0] < 3 })
+    is => 'ro',
+    isa => quote_sub(q{ die "Not <3" unless $_[0] < 3 })
   );
 
 which will be inlined as
@@ -642,7 +643,8 @@ which will be inlined as
 or to avoid localizing @_,
 
   has foo => (
-    is => quote_sub(q{ my ($val) = @_; die "Not <3" unless $val < 3 })
+    is => 'ro',
+    isa => quote_sub(q{ my ($val) = @_; die "Not <3" unless $val < 3 })
   );
 
 which will be inlined as

@@ -1,3 +1,10 @@
+1.000002 - 2012-08-04
+  - remove Devel::GlobalDestruction fallback inlining because we can now
+    depend on 0.08 which uses Sub::Exporter::Progressive
+  - honour BUILDARGS when calling $meta->new_object on behalf of Moose
+  - throw an error on invalid builder (RT#78479)
+  - fix stupid typo in new Sub::Quote section
+
 1.000001 - 2012-07-21
   - documentation tweaks and cleanup
   - ignore required when default or builder is present
