@@ -19,7 +19,7 @@ maint/bump-version
 maint/fulltest
 maint/Makefile.PL.include
 Makefile.PL
-MANIFEST
+MANIFEST			This list of files
 t/accessor-coerce.t
 t/accessor-default.t
 t/accessor-generator-extension.t
@@ -31,6 +31,7 @@ t/accessor-reader-writer.t
 t/accessor-roles.t
 t/accessor-shortcuts.t
 t/accessor-trigger.t
+t/accessor-weaken-pre-5_8_3.t
 t/accessor-weaken.t
 t/buildall-subconstructor.t
 t/buildall.t

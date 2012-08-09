@@ -1,3 +1,6 @@
+1.000003 - 2012-08-09
+  - make setter for weak_ref attributes return the value
+
 1.000002 - 2012-08-04
   - remove Devel::GlobalDestruction fallback inlining because we can now
     depend on 0.08 which uses Sub::Exporter::Progressive

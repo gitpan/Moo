@@ -448,21 +448,23 @@ sub _generate_simple_set {
     #
     # but requires XS and is just too damn crazy
     # so simply throw a better exception
-    my $weak_simple = "my \$preserve; Scalar::Util::weaken(${simple})";
+    my $weak_simple = "my \$preserve; Scalar::Util::weaken(${simple}); no warnings 'void'; \$preserve";
     Moo::_Utils::lt_5_8_3() ? <<"EOC" : $weak_simple;
 
       my \$preserve;
-      eval { Scalar::Util::weaken($simple); 1 } or do {
-        if( \$@ =~ /Modification of a read-only value attempted/) {
-          require Carp;
-          Carp::croak( sprintf (
-            'Reference to readonly value in "%s" can not be weakened on Perl < 5.8.3',
-            $name_str,
-          ) );
-        } else {
-          die \$@;
+      eval { Scalar::Util::weaken($simple); 1 }
+        ? do { no warnings 'void'; \$preserve; }
+        : do {
+          if( \$@ =~ /Modification of a read-only value attempted/) {
+            require Carp;
+            Carp::croak( sprintf (
+              'Reference to readonly value in "%s" can not be weakened on Perl < 5.8.3',
+              $name_str,
+            ) );
+          } else {
+            die \$@;
+          }
         }
-      };
 EOC
   } else {
     $self->_generate_core_set($me, $name, $spec, $value);
