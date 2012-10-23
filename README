@@ -53,10 +53,10 @@ DESCRIPTION
 
     Unlike Mouse this module does not aim at full compatibility with Moose's
     surface syntax, preferring instead of provide full interoperability via
-    the metaclass inflation capabilites described in "MOO AND MOOSE".
+    the metaclass inflation capabilities described in "MOO AND MOOSE".
 
     For a full list of the minor differences between Moose and Moo's surface
-    syntax, see "INCOMPATIBILITIES".
+    syntax, see "INCOMPATIBILITIES WITH MOOSE".
 
 WHY MOO EXISTS
     If you want a full object system with a rich Metaprotocol, Moose is

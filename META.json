@@ -34,7 +34,7 @@
       },
       "runtime" : {
          "requires" : {
-            "Class::Method::Modifiers" : "1.04",
+            "Class::Method::Modifiers" : "1.1",
             "Devel::GlobalDestruction" : "0.09",
             "Module::Runtime" : "0.012",
             "Role::Tiny" : "1.001003",
@@ -48,5 +48,5 @@
          "url" : "git://git.shadowcat.co.uk/gitmo/Moo.git"
       }
    },
-   "version" : "1.000004"
+   "version" : "1.000005"
 }

@@ -19,7 +19,7 @@ maint/bump-version
 maint/fulltest
 maint/Makefile.PL.include
 Makefile.PL
-MANIFEST
+MANIFEST			This list of files
 t/accessor-coerce.t
 t/accessor-default.t
 t/accessor-generator-extension.t
@@ -48,6 +48,7 @@ t/global-destruction-helper.pl
 t/has-array.t
 t/has-before-extends.t
 t/has-plus.t
+t/init-arg.t
 t/lazy_isa.t
 t/lib/base_class.pm
 t/lib/ClassicObject.pm

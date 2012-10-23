@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '1.000004'; # 1.0.4
+our $VERSION = '1.000005'; # 1.0.5
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -240,10 +240,10 @@ thirds of L<Moose>.
 
 Unlike L<Mouse> this module does not aim at full compatibility with
 L<Moose>'s surface syntax, preferring instead of provide full interoperability
-via the metaclass inflation capabilites described in L</MOO AND MOOSE>.
+via the metaclass inflation capabilities described in L</MOO AND MOOSE>.
 
 For a full list of the minor differences between L<Moose> and L<Moo>'s surface
-syntax, see L</INCOMPATIBILITIES>.
+syntax, see L</INCOMPATIBILITIES WITH MOOSE>.
 
 =head1 WHY MOO EXISTS
 
