@@ -1,3 +1,7 @@
+1.000006 - 2012-11-16
+  - Don't use $_ as loop variable when calling arbitrary code (RT#81072)
+  - Bump Role::Tiny prereq to fix method modifier breakage on 5.10.0
+
 1.000005 - 2012-10-23
   - fix POD typo (RT#80060)
   - include init_arg name in constructor errors (RT#79596)

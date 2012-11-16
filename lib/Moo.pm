@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '1.000005'; # 1.0.5
+our $VERSION = '1.000006'; # 1.0.6
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -75,11 +75,11 @@ sub unimport {
 sub _set_superclasses {
   my $class = shift;
   my $target = shift;
-  for (@_) {
-    _load_module($_);
-    if ($INC{"Role/Tiny.pm"} && $Role::Tiny::INFO{$_}) {
+  foreach my $superclass (@_) {
+    _load_module($superclass);
+    if ($INC{"Role/Tiny.pm"} && $Role::Tiny::INFO{$superclass}) {
       require Carp;
-      Carp::croak("Can't extend role '$_'");
+      Carp::croak("Can't extend role '$superclass'");
     }
   }
   # Can't do *{...} = \@_ or 5.10.0's mro.pm stops seeing @ISA

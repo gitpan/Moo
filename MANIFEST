@@ -45,6 +45,7 @@ t/demolish-global_destruction.t
 t/extends-non-moo.t
 t/extends-role.t
 t/global-destruction-helper.pl
+t/global_underscore.t
 t/has-array.t
 t/has-before-extends.t
 t/has-plus.t
@@ -52,8 +53,11 @@ t/init-arg.t
 t/lazy_isa.t
 t/lib/base_class.pm
 t/lib/ClassicObject.pm
+t/lib/ClobberUnderscore.pm
 t/lib/MooObjectWithDelegate.pm
 t/lib/sub_class.pm
+t/lib/UnderscoreClass.pm
+t/lib/UnderscoreRole.pm
 t/load_module.t
 t/load_module_error.t
 t/load_module_role_tiny.t
