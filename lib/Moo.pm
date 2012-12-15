@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '1.000006'; # 1.0.6
+our $VERSION = '1.000007'; # 1.0.7
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -22,8 +22,11 @@ sub import {
   my $target = caller;
   my $class = shift;
   strictures->import;
+  if ($Moo::Role::INFO{$target} and $Moo::Role::INFO{$target}{is_role}) {
+    die "Cannot import Moo into a role";
+  }
   return if $MAKERS{$target}; # already exported into this package
-  $MAKERS{$target} = {};
+  $MAKERS{$target} = { is_class => 1 };
   _install_tracked $target => extends => sub {
     $class->_set_superclasses($target, @_);
     $class->_maybe_reset_handlemoose($target);
