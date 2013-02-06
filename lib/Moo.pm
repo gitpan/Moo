@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '1.000007'; # 1.0.7
+our $VERSION = '1.000008'; # 1.0.8
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -25,8 +25,7 @@ sub import {
   if ($Moo::Role::INFO{$target} and $Moo::Role::INFO{$target}{is_role}) {
     die "Cannot import Moo into a role";
   }
-  return if $MAKERS{$target}; # already exported into this package
-  $MAKERS{$target} = { is_class => 1 };
+  $MAKERS{$target} ||= {};
   _install_tracked $target => extends => sub {
     $class->_set_superclasses($target, @_);
     $class->_maybe_reset_handlemoose($target);
@@ -59,6 +58,8 @@ sub import {
       return;
     };
   }
+  return if $MAKERS{$target}{is_class}; # already exported into this package
+  $MAKERS{$target}{is_class} = 1;
   {
     no strict 'refs';
     @{"${target}::ISA"} = do {
@@ -95,7 +96,7 @@ sub _set_superclasses {
   no warnings 'once'; # piss off. -- mst
   $Moo::HandleMoose::MOUSE{$target} = [
     grep defined, map Mouse::Util::find_meta($_), @_
-  ] if $INC{"Mouse.pm"};
+  ] if Mouse::Util->can('find_meta');
 }
 
 sub _maybe_reset_handlemoose {
@@ -556,8 +557,14 @@ Moo will call
 
   $self->$builder;
 
-If you set this to just C<1>, the predicate is automatically named
-C<_build_${attr_name}>.  This feature comes from L<MooseX::AttributeShortcuts>.
+The following features come from L<MooseX::AttributeShortcuts>:
+
+If you set this to just C<1>, the builder is automatically named
+C<_build_${attr_name}>.
+
+If you set this to a coderef or code-convertible object, that variable will be
+installed under C<$class::_build_${attr_name}> and the builder set to the same
+name.
 
 =item * C<clearer>
 
@@ -765,6 +772,9 @@ at the end of your class to get an inlined (i.e. not horribly slow)
 constructor. Moo does it automatically the first time ->new is called
 on your class.
 
+An extension L<MooX::late> exists to ease translating Moose packages
+to Moo by providing a more Moose-like interface.
+
 =head1 SUPPORT
 
 Users' IRC: #moose on irc.perl.org
@@ -800,6 +810,8 @@ Mithaldu - Christian Walde (cpan:MITHALDU) <walde.christian@googlemail.com>
 ilmari - Dagfinn Ilmari Mannsåker (cpan:ILMARI) <ilmari@ilmari.org>
 
 tobyink - Toby Inkster (cpan:TOBYINK) <tobyink@cpan.org>
+
+haarg - Graham Knop (cpan:HAARG) <haarg@cpan.org>
 
 =head1 COPYRIGHT
 

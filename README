@@ -354,9 +354,14 @@ IMPORTED SUBROUTINES
 
         $self->$builder;
 
-      If you set this to just 1, the predicate is automatically named
-      "_build_${attr_name}". This feature comes from
-      MooseX::AttributeShortcuts.
+      The following features come from MooseX::AttributeShortcuts:
+
+      If you set this to just 1, the builder is automatically named
+      "_build_${attr_name}".
+
+      If you set this to a coderef or code-convertible object, that variable
+      will be installed under "$class::_build_${attr_name}" and the builder
+      set to the same name.
 
     * "clearer"
 
@@ -558,6 +563,9 @@ INCOMPATIBILITIES WITH MOOSE
     constructor. Moo does it automatically the first time ->new is called on
     your class.
 
+    An extension MooX::late exists to ease translating Moose packages to Moo
+    by providing a more Moose-like interface.
+
 SUPPORT
     Users' IRC: #moose on irc.perl.org
 
@@ -591,6 +599,8 @@ CONTRIBUTORS
     ilmari - Dagfinn Ilmari Mannsåker (cpan:ILMARI) <ilmari@ilmari.org>
 
     tobyink - Toby Inkster (cpan:TOBYINK) <tobyink@cpan.org>
+
+    haarg - Graham Knop (cpan:HAARG) <haarg@cpan.org>
 
 COPYRIGHT
     Copyright (c) 2010-2011 the Moo "AUTHOR" and "CONTRIBUTORS" as listed

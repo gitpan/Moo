@@ -27,4 +27,4 @@ requires:
   strictures: 1.004003
 resources:
   repository: git://git.shadowcat.co.uk/gitmo/Moo.git
-version: 1.000007
+version: 1.000008
