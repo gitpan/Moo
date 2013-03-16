@@ -45,6 +45,7 @@ t/demolish-bugs-eats_mini.t
 t/demolish-global_destruction.t
 t/extends-non-moo.t
 t/extends-role.t
+t/foreignbuildargs.t
 t/global-destruction-helper.pl
 t/global_underscore.t
 t/has-array.t
@@ -55,6 +56,7 @@ t/lazy_isa.t
 t/lib/base_class.pm
 t/lib/ClassicObject.pm
 t/lib/ClobberUnderscore.pm
+t/lib/ExtRobot.pm
 t/lib/MooObjectWithDelegate.pm
 t/lib/sub_class.pm
 t/lib/UnderscoreClass.pm
@@ -76,6 +78,7 @@ t/subconstructor.t
 t/undef-bug.t
 t/use-after-no.t
 xt/handle_moose.t
+xt/implicit-moose-types.t
 xt/jenga.t
 xt/lib/ExampleMooRole.pm
 xt/lib/ExampleMooRoleWithAttribute.pm
@@ -98,6 +101,7 @@ xt/moose-lazy.t
 xt/moose-method-modifiers.t
 xt/moose-override-attribute-from-moo-role.t
 xt/moose-override-attribute-with-plus-syntax.t
+xt/moox-types-coercion.t
 xt/moox-types.t
 xt/more-jenga.t
 xt/super-jenga.t

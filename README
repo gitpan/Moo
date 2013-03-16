@@ -22,7 +22,7 @@ SYNOPSIS
        isa => sub {
          die "Only SWEET-TREATZ supported!" unless $_[0] eq 'SWEET-TREATZ'
        },
-    );
+     );
 
      has pounds => (
        is  => 'rw',
@@ -211,6 +211,21 @@ IMPORTED SUBROUTINES
 
     Declares an attribute for the class.
 
+     package Foo;
+     use Moo;
+     has 'attr' => (
+       is => 'ro'
+     );
+
+     package Bar;
+     use Moo;
+     extends 'Foo';
+     has '+attr' => (
+       default => sub { "blah" },
+     );
+
+    Using the "+" notation, it's possible to override an attribute.
+
     The options for "has" are as follows:
 
     * is
@@ -225,7 +240,10 @@ IMPORTED SUBROUTINES
       "builder" to "_build_${attribute_name}" to allow on-demand generated
       attributes. This feature was my attempt to fix my incompetence when
       originally designing "lazy_build", and is also implemented by
-      MooseX::AttributeShortcuts.
+      MooseX::AttributeShortcuts. There is, however, nothing to stop you
+      using "lazy" and "builder" yourself with "rwp" or "rw" - it's just
+      that this isn't generally a good idea so we don't provide a shortcut
+      for it.
 
       "rwp" generates a reader like "ro", but also sets "writer" to
       "_set_${attribute_name}" for attributes that are designed to be
@@ -305,11 +323,12 @@ IMPORTED SUBROUTINES
          un => 'one',
        }
 
-    * trigger
+    * "trigger"
 
       Takes a coderef which will get called any time the attribute is set.
-      This includes the constructor. Coderef will be invoked against the
-      object with the new value as an argument.
+      This includes the constructor, but not default or built values.
+      Coderef will be invoked against the object with the new value as an
+      argument.
 
       If you set this to just 1, it generates a trigger which calls the
       "_trigger_${attr_name}" method on $self. This feature comes from
@@ -326,6 +345,10 @@ IMPORTED SUBROUTINES
       to populate an attribute if no value is supplied to the constructor -
       or if the attribute is lazy, when the attribute is first retrieved if
       no value has yet been provided.
+
+      If a simple scalar is provided, it will be inlined as a string. Any
+      non-code reference (hash, array) will result in an error - for that
+      case instead use a code reference that returns the desired value.
 
       Note that if your default is fired during new() there is no guarantee
       that other attributes have been populated yet so you should not rely
@@ -477,7 +500,7 @@ INCOMPATIBILITIES WITH MOOSE
     probably the weakest part of Moose design-wise.
 
     "initializer" is not supported in core since the author considers it to
-    be a bad idea but may be supported by an extension in future. Meanwhile
+    be a bad idea and Moose best practices recommend avoiding it. Meanwhile
     "trigger" or "coerce" are more likely to be able to fulfill your needs.
 
     There is no meta object. If you need this level of complexity you wanted
@@ -508,13 +531,15 @@ INCOMPATIBILITIES WITH MOOSE
     loading Devel::Dwarn into "main::" (via "perl -MDevel::Dwarn ..." for
     example) and using "$obj->$::Dwarn()" instead.
 
-    "default" only supports coderefs, because doing otherwise is usually a
-    mistake anyway.
+    "default" only supports coderefs and plain scalars, because passing a
+    hash or array reference as a default is almost always incorrect since
+    the value is then shared between all objects using that default.
 
     "lazy_build" is not supported; you are instead encouraged to use the "is
     => 'lazy'" option supported by Moo and MooseX::AttributeShortcuts.
 
-    "auto_deref" is not supported since the author considers it a bad idea.
+    "auto_deref" is not supported since the author considers it a bad idea
+    and it has been considered best practice to avoid it for some time.
 
     "documentation" will show up in a Moose metaclass created from your
     class but is otherwise ignored. Then again, Moose ignores it as well, so
@@ -571,6 +596,13 @@ SUPPORT
 
     Development and contribution IRC: #web-simple on irc.perl.org
 
+    Bugtracker: <http://rt.cpan.org/NoAuth/Bugs.html?Dist=Moo>
+
+    Git repository: <git://git.shadowcat.co.uk/gitmo/Moo.git>
+
+    Git web access:
+    <http://git.shadowcat.co.uk/gitweb/gitweb.cgi?p=gitmo/Moo.git>
+
 AUTHOR
     mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>
 
@@ -602,11 +634,13 @@ CONTRIBUTORS
 
     haarg - Graham Knop (cpan:HAARG) <haarg@cpan.org>
 
+    mattp - Matt Phillips (cpan:MATTP) <mattp@cpan.org>
+
 COPYRIGHT
     Copyright (c) 2010-2011 the Moo "AUTHOR" and "CONTRIBUTORS" as listed
     above.
 
 LICENSE
     This library is free software and may be distributed under the same
-    terms as perl itself.
+    terms as perl itself. See <http://dev.perl.org/licenses/>.
 

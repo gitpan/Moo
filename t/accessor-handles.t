@@ -1,12 +1,23 @@
 use strictures 1;
 use Test::More;
 
+use lib "t/lib";
+
+{
+  package Baz;
+  use Moo;
+  sub beep {'beep'}
+
+  sub is_passed_undefined { !defined($_[0]) ? 'bar' : 'fail' }
+}
+
 {
   package Robot;
 
   use Moo::Role;
 
   requires 'smash';
+  $INC{"Robot.pm"} = 1;
 
 }
 
@@ -34,10 +45,19 @@ use Test::More;
   has foo4 => ( is => 'ro', handles => {
      eat_curry => [ yum => 'Curry!' ],
   });
+  has foo5 => ( is => 'ro', handles => 'ExtRobot' );
+  has foo6 => ( is => 'rw',
+                handles => { foobot => '${\\Baz->can("beep")}'},
+                default => sub { 0 } );
+  has foo7 => ( is => 'rw',
+                handles => { foobar => '${\\Baz->can("is_passed_undefined")}'},
+                default => sub { undef } );
+
 }
 
 my $bar = Bar->new(
-  foo => Foo->new, foo2 => Foo->new, foo3 => Foo->new, foo4 => Foo->new
+  foo => Foo->new, foo2 => Foo->new, foo3 => Foo->new, foo4 => Foo->new,
+  foo5 => Baz->new
 );
 
 is $bar->one, 1, 'handles works';
@@ -47,6 +67,24 @@ is $bar->un, 1, 'handles works for aliasing a method';
 
 is $bar->smash, 'smash', 'handles works for a role';
 
+is $bar->beep, 'beep', 'handles loads roles';
+
 is $bar->eat_curry, 'Curry!', 'handles works for currying';
+
+is $bar->foobot, 'beep', 'asserter checks for existence not truth, on false value';
+
+is $bar->foobar, 'bar', 'asserter checks for existence not truth, on undef ';
+
+{
+	local $@;
+	ok !eval q{
+		package Baz;
+		use Moo;
+		has foo => ( is => 'ro', handles => 'Robot' );
+		sub smash { 1 };
+		1;
+	}, 'handles will not overwrite locally defined method';
+	like $@, qr{You cannot overwrite a locally defined method \(smash\) with a delegation};
+}
 
 done_testing;

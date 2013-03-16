@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '1.000008'; # 1.0.8
+our $VERSION = '1.001000'; # 1.1.0
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -165,7 +165,7 @@ sub _constructor_maker_for {
         construction_string => (
           $moo_constructor
             ? ($con ? $con->construction_string : undef)
-            : ('$class->'.$target.'::SUPER::new(@_)')
+            : ('$class->'.$target.'::SUPER::new($class->can(q[FOREIGNBUILDARGS]) ? $class->FOREIGNBUILDARGS(@_) : @_)')
         ),
         subconstructor_handler => (
           '      if ($Moo::MAKERS{$class}) {'."\n"
@@ -212,7 +212,7 @@ Moo - Minimalist Object Orientation (with Moose compatiblity)
    isa => sub {
      die "Only SWEET-TREATZ supported!" unless $_[0] eq 'SWEET-TREATZ'
    },
-);
+ );
 
  has pounds => (
    is  => 'rw',
@@ -415,6 +415,21 @@ class.  An error will be raised if these roles have conflicting methods.
 
 Declares an attribute for the class.
 
+ package Foo;
+ use Moo;
+ has 'attr' => (
+   is => 'ro'
+ );
+
+ package Bar;
+ use Moo;
+ extends 'Foo';
+ has '+attr' => (
+   default => sub { "blah" },
+ );
+
+Using the C<+> notation, it's possible to override an attribute.
+
 The options for C<has> are as follows:
 
 =over 2
@@ -430,7 +445,9 @@ C<lazy> generates a reader like C<ro>, but also sets C<lazy> to 1 and
 C<builder> to C<_build_${attribute_name}> to allow on-demand generated
 attributes.  This feature was my attempt to fix my incompetence when
 originally designing C<lazy_build>, and is also implemented by
-L<MooseX::AttributeShortcuts>.
+L<MooseX::AttributeShortcuts>. There is, however, nothing to stop you
+using C<lazy> and C<builder> yourself with C<rwp> or C<rw> - it's just that
+this isn't generally a good idea so we don't provide a shortcut for it.
 
 C<rwp> generates a reader like C<ro>, but also sets C<writer> to
 C<_set_${attribute_name}> for attributes that are designed to be written
@@ -509,11 +526,11 @@ Takes a hashref
    un => 'one',
  }
 
-=item * trigger
+=item * C<trigger>
 
 Takes a coderef which will get called any time the attribute is set. This
-includes the constructor. Coderef will be invoked against the object with the
-new value as an argument.
+includes the constructor, but not default or built values. Coderef will be
+invoked against the object with the new value as an argument.
 
 If you set this to just C<1>, it generates a trigger which calls the
 C<_trigger_${attr_name}> method on C<$self>. This feature comes from
@@ -530,6 +547,10 @@ Takes a coderef which will get called with $self as its only argument
 to populate an attribute if no value is supplied to the constructor - or
 if the attribute is lazy, when the attribute is first retrieved if no
 value has yet been provided.
+
+If a simple scalar is provided, it will be inlined as a string. Any non-code
+reference (hash, array) will result in an error - for that case instead use
+a code reference that returns the desired value.
 
 Note that if your default is fired during new() there is no guarantee that
 other attributes have been populated yet so you should not rely on their
@@ -687,7 +708,7 @@ API will encourage the use of other type systems as well, since it's
 probably the weakest part of Moose design-wise.
 
 C<initializer> is not supported in core since the author considers it to be a
-bad idea but may be supported by an extension in future. Meanwhile C<trigger> or
+bad idea and Moose best practices recommend avoiding it. Meanwhile C<trigger> or
 C<coerce> are more likely to be able to fulfill your needs.
 
 There is no meta object.  If you need this level of complexity you wanted
@@ -718,13 +739,15 @@ The C<dump> method is not provided by default. The author suggests loading
 L<Devel::Dwarn> into C<main::> (via C<perl -MDevel::Dwarn ...> for example) and
 using C<$obj-E<gt>$::Dwarn()> instead.
 
-L</default> only supports coderefs, because doing otherwise is usually a
-mistake anyway.
+L</default> only supports coderefs and plain scalars, because passing a hash
+or array reference as a default is almost always incorrect since the value is
+then shared between all objects using that default.
 
 C<lazy_build> is not supported; you are instead encouraged to use the
 C<< is => 'lazy' >> option supported by L<Moo> and L<MooseX::AttributeShortcuts>.
 
-C<auto_deref> is not supported since the author considers it a bad idea.
+C<auto_deref> is not supported since the author considers it a bad idea and
+it has been considered best practice to avoid it for some time.
 
 C<documentation> will show up in a L<Moose> metaclass created from your class
 but is otherwise ignored. Then again, L<Moose> ignores it as well, so this
@@ -779,7 +802,17 @@ to Moo by providing a more Moose-like interface.
 
 Users' IRC: #moose on irc.perl.org
 
+=for html <a href="http://chat.mibbit.com/#moose@irc.perl.org">(click for instant chatroom login)</a>
+
 Development and contribution IRC: #web-simple on irc.perl.org
+
+=for html <a href="http://chat.mibbit.com/#web-simple@irc.perl.org">(click for instant chatroom login)</a>
+
+Bugtracker: L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=Moo>
+
+Git repository: L<git://git.shadowcat.co.uk/gitmo/Moo.git>
+
+Git web access: L<http://git.shadowcat.co.uk/gitweb/gitweb.cgi?p=gitmo/Moo.git>
 
 =head1 AUTHOR
 
@@ -813,6 +846,8 @@ tobyink - Toby Inkster (cpan:TOBYINK) <tobyink@cpan.org>
 
 haarg - Graham Knop (cpan:HAARG) <haarg@cpan.org>
 
+mattp - Matt Phillips (cpan:MATTP) <mattp@cpan.org>
+
 =head1 COPYRIGHT
 
 Copyright (c) 2010-2011 the Moo L</AUTHOR> and L</CONTRIBUTORS>
@@ -821,6 +856,6 @@ as listed above.
 =head1 LICENSE
 
 This library is free software and may be distributed under the same terms
-as perl itself.
+as perl itself. See L<http://dev.perl.org/licenses/>.
 
 =cut

@@ -7,6 +7,7 @@ use Sub::Quote;
 use B 'perlstring';
 use Scalar::Util 'blessed';
 use overload ();
+use Module::Runtime qw(use_module);
 BEGIN {
   our $CAN_HAZ_XS =
     !$ENV{MOO_XS_DISABLE}
@@ -17,9 +18,15 @@ BEGIN {
   ;
 }
 
+sub _die_overwrite
+{
+  my ($pkg, $method, $type) = @_;
+  die "You cannot overwrite a locally defined method ($method) with @{[ $type || 'an accessor' ]}";
+}
+
 sub generate_method {
   my ($self, $into, $name, $spec, $quote_opts) = @_;
-  $name =~ s/^\+//;
+  $spec->{allow_overwrite}++ if $name =~ s/^\+//;
   die "Must have an is" unless my $is = $spec->{is};
   if ($is eq 'ro') {
     $spec->{reader} = $name unless exists $spec->{reader};
@@ -59,10 +66,9 @@ sub generate_method {
     $spec->{trigger} = quote_sub('shift->_trigger_'.$name.'(@_)');
   }
 
-  for my $setting (qw( default coerce )) {
-    next if !exists $spec->{$setting};
-    my $value = $spec->{$setting};
-    my $invalid = "Invalid $setting '" . overload::StrVal($value)
+  if (exists $spec->{coerce}) {
+    my $value = $spec->{coerce};
+    my $invalid = "Invalid coerce '" . overload::StrVal($value)
       . "' for $into->$name - not a coderef";
     die "$invalid or code-convertible object"
       unless ref $value and (ref $value eq 'CODE' or blessed($value));
@@ -70,8 +76,23 @@ sub generate_method {
       if !eval { \&$value };
   }
 
+  if (exists $spec->{default}) {
+    my $value = $spec->{default};
+    if (!defined $value || ref $value) {
+      my $invalid = "Invalid default '" . overload::StrVal($value)
+        . "' for $into->$name - not a coderef or non-ref";
+      die "$invalid or code-convertible object"
+        unless ref $value and (ref $value eq 'CODE' or blessed($value));
+      die "$invalid and could not be converted to a coderef: $@"
+        if !eval { \&$value };
+    }
+  }
+
+
   my %methods;
   if (my $reader = $spec->{reader}) {
+    _die_overwrite($into, $reader, 'a reader')
+      if !$spec->{allow_overwrite} && *{_getglob("${into}::${reader}")}{CODE};
     if (our $CAN_HAZ_XS && $self->is_simple_get($name, $spec)) {
       $methods{$reader} = $self->_generate_xs(
         getters => $into, $reader, $name, $spec
@@ -87,6 +108,8 @@ sub generate_method {
     }
   }
   if (my $accessor = $spec->{accessor}) {
+    _die_overwrite($into, $accessor, 'an accessor')
+      if !$spec->{allow_overwrite} && *{_getglob("${into}::${accessor}")}{CODE};
     if (
       our $CAN_HAZ_XS
       && $self->is_simple_get($name, $spec)
@@ -105,6 +128,8 @@ sub generate_method {
     }
   }
   if (my $writer = $spec->{writer}) {
+    _die_overwrite($into, $writer, 'a writer')
+      if !$spec->{allow_overwrite} && *{_getglob("${into}::${writer}")}{CODE};
     if (
       our $CAN_HAZ_XS
       && $self->is_simple_set($name, $spec)
@@ -122,6 +147,8 @@ sub generate_method {
     }
   }
   if (my $pred = $spec->{predicate}) {
+    _die_overwrite($into, $pred, 'a predicate')
+      if !$spec->{allow_overwrite} && *{_getglob("${into}::${pred}")}{CODE};
     $methods{$pred} =
       quote_sub "${into}::${pred}" =>
         '    '.$self->_generate_simple_has('$_[0]', $name, $spec)."\n"
@@ -131,6 +158,8 @@ sub generate_method {
     _install_coderef( "${into}::$spec->{builder}" => $spec->{builder_sub} );
   }
   if (my $cl = $spec->{clearer}) {
+    _die_overwrite($into, $cl, 'a clearer')
+      if !$spec->{allow_overwrite} && *{_getglob("${into}::${cl}")}{CODE};
     $methods{$cl} =
       quote_sub "${into}::${cl}" => 
         $self->_generate_simple_clear('$_[0]', $name, $spec)."\n"
@@ -145,13 +174,15 @@ sub generate_method {
         map [ $_ => ref($hspec->{$_}) ? @{$hspec->{$_}} : $hspec->{$_} ],
           keys %$hspec;
       } elsif (!ref($hspec)) {
-        map [ $_ => $_ ], Role::Tiny->methods_provided_by($hspec);
+        map [ $_ => $_ ], use_module('Role::Tiny')->methods_provided_by(use_module($hspec))
       } else {
         die "You gave me a handles of ${hspec} and I have no idea why";
       }
     };
-    foreach my $spec (@specs) {
-      my ($proxy, $target, @args) = @$spec;
+    foreach my $delegation_spec (@specs) {
+      my ($proxy, $target, @args) = @$delegation_spec;
+      _die_overwrite($into, $proxy, 'a delegation')
+        if !$spec->{allow_overwrite} && *{_getglob("${into}::${proxy}")}{CODE};
       $self->{captures} = {};
       $methods{$proxy} =
         quote_sub "${into}::${proxy}" =>
@@ -162,9 +193,17 @@ sub generate_method {
   }
   if (my $asserter = $spec->{asserter}) {
     $self->{captures} = {};
+
+    my $code = "do {\n"
+               ."  my \$val = ".$self->_generate_get($name, $spec).";\n"
+               ."  unless (".$self->_generate_simple_has('$_[0]', $name).") {\n"
+               .qq!    die "Attempted to access '${name}' but it is not set";\n!
+               ."  }\n"
+               ."  \$val;\n"
+               ."}\n";
+
     $methods{$asserter} =
-      quote_sub "${into}::${asserter}" =>
-        'do { '.$self->_generate_get($name, $spec).qq! }||die "Attempted to access '${name}' but it is not set"!,
+      quote_sub "${into}::${asserter}" => $code,
         delete $self->{captures}
       ;
   }
@@ -245,9 +284,14 @@ sub _generate_use_default {
 
 sub _generate_get_default {
   my ($self, $me, $name, $spec) = @_;
-  $spec->{default}
-    ? $self->_generate_call_code($name, 'default', $me, $spec->{default})
-    : "${me}->${\$spec->{builder}}"
+  if (exists $spec->{default}) {
+    ref $spec->{default}
+      ? $self->_generate_call_code($name, 'default', $me, $spec->{default})
+      : perlstring $spec->{default};
+  }
+  else {
+    "${me}->${\$spec->{builder}}"
+  }
 }
 
 sub generate_simple_get {

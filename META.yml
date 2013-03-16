@@ -26,5 +26,8 @@ requires:
   Role::Tiny: 1.002004
   strictures: 1.004003
 resources:
+  bugtracker: http://rt.cpan.org/NoAuth/Bugs.html?Dist=Moo
+  license: http://dev.perl.org/licenses/
   repository: git://git.shadowcat.co.uk/gitmo/Moo.git
-version: 1.000008
+  x_IRC: irc://irc.perl.org/#moose
+version: 1.001000

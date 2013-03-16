@@ -37,6 +37,12 @@ sub inject_fake_metaclass_for {
   Class::MOP::store_metaclass_by_name(
     $name, bless({ name => $name }, 'Moo::HandleMoose::FakeMetaClass')
   );
+  require Moose::Util::TypeConstraints;
+  if ($Moo::Role::INFO{$name}) {
+    Moose::Util::TypeConstraints::find_or_create_does_type_constraint($name);
+  } else {
+    Moose::Util::TypeConstraints::find_or_create_isa_type_constraint($name);
+  }
 }
 
 {
@@ -69,10 +75,6 @@ sub inject_real_metaclass_for {
 
   my %methods = %{Role::Tiny->_concrete_methods_of($name)};
 
-  while (my ($meth_name, $meth_code) = each %methods) {
-    $meta->add_method($meth_name, $meth_code) if $meth_code;
-  }
-
   # if stuff gets added afterwards, _maybe_reset_handlemoose should
   # trigger the recreation of the metaclass but we need to ensure the
   # Role::Tiny cache is cleared so we don't confuse Moo itself.
@@ -93,22 +95,24 @@ sub inject_real_metaclass_for {
       delete $spec{index};
       $spec{is} = 'ro' if $spec{is} eq 'lazy' or $spec{is} eq 'rwp';
       delete $spec{asserter};
+      my $coerce = $spec{coerce};
       if (my $isa = $spec{isa}) {
         my $tc = $spec{isa} = do {
           if (my $mapped = $TYPE_MAP{$isa}) {
-            $mapped->();
+            my $type = $mapped->();
+            $coerce ? $type->create_child_type(name => $type->name) : $type;
           } else {
             Moose::Meta::TypeConstraint->new(
               constraint => sub { eval { &$isa; 1 } }
             );
           }
         };
-        if (my $coerce = $spec{coerce}) {
+        if ($coerce) {
           $tc->coercion(Moose::Meta::TypeCoercion->new)
              ->_compiled_type_coercion($coerce);
           $spec{coerce} = 1;
         }
-      } elsif (my $coerce = $spec{coerce}) {
+      } elsif ($coerce) {
         my $attr = perlstring($name);
         my $tc = Moose::Meta::TypeConstraint->new(
                    constraint => sub { die "This is not going to work" },
@@ -136,6 +140,10 @@ sub inject_real_metaclass_for {
       }
     }
   }
+  while (my ($meth_name, $meth_code) = each %methods) {
+    $meta->add_method($meth_name, $meth_code) if $meth_code;
+  }
+
   if ($am_role) {
     my $info = $Moo::Role::INFO{$name};
     $meta->add_required_methods(@{$info->{requires}});
