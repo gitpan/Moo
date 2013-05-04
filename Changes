@@ -1,4 +1,24 @@
+1.002000 - 2013-05-04
+  - add 'moosify' attribute key to provide code for inflating to Moose
+  - fix warnings about unknown attribute parameters on metaclass inflation
+  - don't pass 'handles' down when doing 'has +' to avoid unDWIMmy explosions
+  - throw a useful exception when typemap doesn't return a value
+  - avoid localising @_ when not required for Sub::Quote
+  - successfully inflate a metaclass for attributeless classes (RT#86415)
+  - fix false default values used with non-lazy accessors
+  - stop built values that fail isa checks still getting stored in the object
+  - stop lazy+weak_ref accessors re-building their value on every call
+  - make lazy+weak_ref accessors return undef if built value isn't already
+    stored elsewhere (Moose compatibility)
+  - stop isa checks being called on every access for lazy attributes
+  - bump Devel::GlobalDestruction dependency to fix warning on cleanup
+    when run under -c (RT#78617)
+  - document Moose type constraint creation for roles and classes
+    (actually fixed in 1.001000)
+
 1.001000 - 2013-03-16
+  - add support for FOREIGNBUILDARGS when inheriting from non-Moo classes
+  - non-ref default values are allowed without using a sub
   - has will refuse to overwrite locally defined subs with generated
     accessors.
   - added more meta resources and added more support relevant links into

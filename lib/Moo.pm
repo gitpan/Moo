@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '1.001000'; # 1.1.0
+our $VERSION = '1.002000'; # 1.2.0
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -188,7 +188,7 @@ sub _constructor_maker_for {
 
 =head1 NAME
 
-Moo - Minimalist Object Orientation (with Moose compatiblity)
+Moo - Minimalist Object Orientation (with Moose compatibility)
 
 =head1 SYNOPSIS
 
@@ -281,6 +281,10 @@ metaclasses for your L<Moo> and L<Moo::Role> packages, so you should be able
 to use them in L<Moose> code without anybody ever noticing you aren't using
 L<Moose> everywhere.
 
+L<Moo> will also create L<Moose type constraints|Moose::Manual::Types> for
+classes and roles, so that C<< isa => 'MyClass' >> and C<< isa => 'MyRole' >>
+work the same as for L<Moose> classes and roles.
+
 Extending a L<Moose> class or consuming a L<Moose::Role> will also work.
 
 So will extending a L<Mouse> class or consuming a L<Mouse::Role> - but note
@@ -357,6 +361,13 @@ You can override this method in your class to handle other types of options
 passed to the constructor.
 
 This method should always return a hash reference of named options.
+
+=head2 FOREIGNBUILDARGS
+
+If you are inheriting from a non-Moo class, the arguments passed to the parent
+class constructor can be manipulated by defining a C<FOREIGNBUILDARGS> method.
+It will recieve the same arguments as C<BUILDARGS>, and should return a list
+of arguments to pass to the parent class constructor.
 
 =head2 BUILD
 
@@ -467,6 +478,9 @@ one should do
    die "$_[0] is not a number!" unless looks_like_number $_[0]
  },
 
+Note that the return value is ignored, only whether the sub lives or
+dies matters.
+
 L<Sub::Quote aware|/SUB QUOTE AWARE>
 
 Since L<Moo> does B<not> run the C<isa> check before C<coerce> if a coercion
@@ -564,7 +578,7 @@ Takes a method name which will return true if an attribute has a value.
 
 If you set this to just C<1>, the predicate is automatically named
 C<has_${attr_name}> if your attribute's name does not start with an
-underscore, or <_has_${attr_name_without_the_underscore}> if it does.
+underscore, or C<_has_${attr_name_without_the_underscore}> if it does.
 This feature comes from L<MooseX::AttributeShortcuts>.
 
 =item * C<builder>
@@ -630,6 +644,13 @@ Takes the name of the key to look for at instantiation time of the object.  A
 common use of this is to make an underscored attribute have a non-underscored
 initialization name. C<undef> means that passing the value in on instantiation
 is ignored.
+
+=item * C<moosify>
+
+Takes either a coderef or array of coderefs which is meant to transform the
+given attributes specifications if necessary when upgrading to a Moose role or
+class. You shouldn't need this by default, but is provided as a means of
+possible extensibility.
 
 =back
 
@@ -793,7 +814,7 @@ Finally, Moose requires you to call
 
 at the end of your class to get an inlined (i.e. not horribly slow)
 constructor. Moo does it automatically the first time ->new is called
-on your class.
+on your class. (C<make_immutable> is a no-op in Moo to ease migration.)
 
 An extension L<MooX::late> exists to ease translating Moose packages
 to Moo by providing a more Moose-like interface.

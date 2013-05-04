@@ -137,6 +137,67 @@ BEGIN {
   sub jab { 3 }
 }
 
+BEGIN {
+  package Plunk;
+
+  use Moo::Role;
+
+  has pp => (is => 'rw', moosify => sub {
+    my $spec = shift;
+    $spec->{documentation} = 'moosify';
+  });
+}
+
+BEGIN {
+  package Plank;
+
+  use Moo;
+  use Sub::Quote;
+
+  has vv => (is => 'rw', moosify => [quote_sub(q|
+    $_[0]->{documentation} = 'moosify';
+  |), sub { $_[0]->{documentation} = $_[0]->{documentation}.' foo'; }]);
+}
+
+BEGIN {
+  package Plunker;
+
+  use Moose;
+
+  with 'Plunk';
+}
+
+BEGIN {
+  package Planker;
+
+  use Moose;
+
+  extends 'Plank';
+}
+
+BEGIN {
+  package Plonk;
+  use Moo;
+  has kk => (is => 'rw', moosify => [sub {
+    $_[0]->{documentation} = 'parent';
+  }]);
+}
+BEGIN {
+  package Plonker;
+  use Moo;
+  extends 'Plonk';
+  has '+kk' => (moosify => sub {
+    my $spec = shift;
+    $spec->{documentation} .= 'child';
+  });
+}
+BEGIN{
+  local $SIG{__WARN__} = sub { fail "warning: $_[0]" };
+  package SplatteredMoose;
+  use Moose;
+  extends 'Splattered';
+}
+
 foreach my $s (
     Splattered->new,
     Splattered2->new,
@@ -144,14 +205,15 @@ foreach my $s (
     Ker::Splattered2->new,
     KerSplattered->new,
     KerSplattered2->new,
+    SplatteredMoose->new
 ) {
-  ok($s->can('punch'))
+  can_ok($s, 'punch')
     and is($s->punch, 1, 'punch');
-  ok($s->can('jab'))
+  can_ok($s, 'jab')
     and is($s->jab, 3, 'jab');
-  ok($s->can('monkey'))
+  can_ok($s, 'monkey')
     and is($s->monkey, 'OW', 'monkey');
-  ok($s->can('trap'))
+  can_ok($s, 'trap')
     and is($s->trap, -1, 'trap');
 }
 
@@ -161,9 +223,15 @@ foreach my $c (qw/
     KerSplattered
     KerSplattered2
 /) {
-  ok $c->can('has_ker');
-  ok $c->can('has_splat');
+  can_ok($c, 'has_ker');
+  can_ok($c, 'has_splat');
 }
 
-done_testing;
+is(Plunker->meta->find_attribute_by_name('pp')->documentation, 'moosify', 'moosify modifies attr specs');
+is(Planker->meta->find_attribute_by_name('vv')->documentation, 'moosify foo', 'moosify modifies attr specs as array');
 
+is( Plonker->meta->find_attribute_by_name('kk')->documentation,
+    'parentchild',
+    'moosify applies for overridden attributes with roles');
+
+done_testing;

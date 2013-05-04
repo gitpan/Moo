@@ -1,5 +1,5 @@
 NAME
-    Moo - Minimalist Object Orientation (with Moose compatiblity)
+    Moo - Minimalist Object Orientation (with Moose compatibility)
 
 SYNOPSIS
      package Cat::Food;
@@ -88,6 +88,10 @@ MOO AND MOOSE
     to use them in Moose code without anybody ever noticing you aren't using
     Moose everywhere.
 
+    Moo will also create Moose type constraints for classes and roles, so
+    that "isa => 'MyClass'" and "isa => 'MyRole'" work the same as for Moose
+    classes and roles.
+
     Extending a Moose class or consuming a Moose::Role will also work.
 
     So will extending a Mouse class or consuming a Mouse::Role - but note
@@ -159,6 +163,13 @@ IMPORTED METHODS
     options passed to the constructor.
 
     This method should always return a hash reference of named options.
+
+  FOREIGNBUILDARGS
+    If you are inheriting from a non-Moo class, the arguments passed to the
+    parent class constructor can be manipulated by defining a
+    "FOREIGNBUILDARGS" method. It will recieve the same arguments as
+    "BUILDARGS", and should return a list of arguments to pass to the parent
+    class constructor.
 
   BUILD
     Define a "BUILD" method on your class and the constructor will
@@ -263,6 +274,9 @@ IMPORTED SUBROUTINES
          die "$_[0] is not a number!" unless looks_like_number $_[0]
        },
 
+      Note that the return value is ignored, only whether the sub lives or
+      dies matters.
+
       Sub::Quote aware
 
       Since Moo does not run the "isa" check before "coerce" if a coercion
@@ -363,7 +377,7 @@ IMPORTED SUBROUTINES
 
       If you set this to just 1, the predicate is automatically named
       "has_${attr_name}" if your attribute's name does not start with an
-      underscore, or <_has_${attr_name_without_the_underscore}> if it does.
+      underscore, or "_has_${attr_name_without_the_underscore}" if it does.
       This feature comes from MooseX::AttributeShortcuts.
 
     * "builder"
@@ -429,6 +443,13 @@ IMPORTED SUBROUTINES
       object. A common use of this is to make an underscored attribute have
       a non-underscored initialization name. "undef" means that passing the
       value in on instantiation is ignored.
+
+    * "moosify"
+
+      Takes either a coderef or array of coderefs which is meant to
+      transform the given attributes specifications if necessary when
+      upgrading to a Moose role or class. You shouldn't need this by
+      default, but is provided as a means of possible extensibility.
 
   before
      before foo => sub { ... };
@@ -586,7 +607,7 @@ INCOMPATIBILITIES WITH MOOSE
 
     at the end of your class to get an inlined (i.e. not horribly slow)
     constructor. Moo does it automatically the first time ->new is called on
-    your class.
+    your class. ("make_immutable" is a no-op in Moo to ease migration.)
 
     An extension MooX::late exists to ease translating Moose packages to Moo
     by providing a more Moose-like interface.

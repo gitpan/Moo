@@ -66,28 +66,26 @@ sub generate_method {
     $spec->{trigger} = quote_sub('shift->_trigger_'.$name.'(@_)');
   }
 
-  if (exists $spec->{coerce}) {
-    my $value = $spec->{coerce};
-    my $invalid = "Invalid coerce '" . overload::StrVal($value)
-      . "' for $into->$name - not a coderef";
-    die "$invalid or code-convertible object"
-      unless ref $value and (ref $value eq 'CODE' or blessed($value));
-    die "$invalid and could not be converted to a coderef: $@"
-      if !eval { \&$value };
+  for my $setting (qw( isa coerce )) {
+    next if !exists $spec->{$setting};
+    $self->_validate_codulatable($setting, $spec->{$setting}, "$into->$name");
   }
 
   if (exists $spec->{default}) {
-    my $value = $spec->{default};
-    if (!defined $value || ref $value) {
-      my $invalid = "Invalid default '" . overload::StrVal($value)
-        . "' for $into->$name - not a coderef or non-ref";
-      die "$invalid or code-convertible object"
-        unless ref $value and (ref $value eq 'CODE' or blessed($value));
-      die "$invalid and could not be converted to a coderef: $@"
-        if !eval { \&$value };
+    if (!defined $spec->{default} || ref $spec->{default}) {
+      $self->_validate_codulatable('default', $spec->{default}, "$into->$name", 'or a non-ref');
     }
   }
 
+  if (exists $spec->{moosify}) {
+    if (ref $spec->{moosify} ne 'ARRAY') {
+      $spec->{moosify} = [$spec->{moosify}];
+    }
+
+    for my $spec (@{$spec->{moosify}}) {
+      $self->_validate_codulatable('moosify', $spec, "$into->$name");
+    }
+  }
 
   my %methods;
   if (my $reader = $spec->{reader}) {
@@ -194,16 +192,9 @@ sub generate_method {
   if (my $asserter = $spec->{asserter}) {
     $self->{captures} = {};
 
-    my $code = "do {\n"
-               ."  my \$val = ".$self->_generate_get($name, $spec).";\n"
-               ."  unless (".$self->_generate_simple_has('$_[0]', $name).") {\n"
-               .qq!    die "Attempted to access '${name}' but it is not set";\n!
-               ."  }\n"
-               ."  \$val;\n"
-               ."}\n";
 
     $methods{$asserter} =
-      quote_sub "${into}::${asserter}" => $code,
+      quote_sub "${into}::${asserter}" => $self->_generate_asserter($name, $spec),
         delete $self->{captures}
       ;
   }
@@ -230,7 +221,7 @@ sub is_simple_set {
 
 sub has_eager_default {
   my ($self, $name, $spec) = @_;
-  (!$spec->{lazy} and ($spec->{default} or $spec->{builder}));
+  (!$spec->{lazy} and (exists $spec->{default} or $spec->{builder}));
 }
 
 sub _generate_get {
@@ -239,15 +230,10 @@ sub _generate_get {
   if ($self->is_simple_get($name, $spec)) {
     $simple;
   } else {
-    'do { '.$self->_generate_use_default(
+    $self->_generate_use_default(
       '$_[0]', $name, $spec,
       $self->_generate_simple_has('$_[0]', $name, $spec),
-    ).'; '
-    .($spec->{isa}
-      ?($self->_generate_isa_check($name, $simple, $spec->{isa}).'; ')
-      :''
-    )
-    .$simple.' }';
+    );
   }
 }
 
@@ -277,9 +263,14 @@ sub _generate_use_default {
       $spec->{coerce}
     )
   }
-  $self->_generate_simple_set(
-    $me, $name, $spec, $get_value
-  ).' unless '.$test;
+  $test." ? \n"
+  .$self->_generate_simple_get($me, $name, $spec)."\n:"
+  .($spec->{isa}
+    ? "    do {\n      my \$value = ".$get_value.";\n"
+      ."      ".$self->_generate_isa_check($name, '$value', $spec->{isa}).";\n"
+      ."      ".$self->_generate_simple_set($me, $name, $spec, '$value')."\n"
+      ."    }\n"
+    : '    ('.$self->_generate_simple_set($me, $name, $spec, $get_value).")\n");
 }
 
 sub _generate_get_default {
@@ -311,22 +302,27 @@ sub _generate_set {
     $self->_generate_simple_set('$_[0]', $name, $spec, '$_[1]');
   } else {
     my ($coerce, $trigger, $isa_check) = @{$spec}{qw(coerce trigger isa)};
-    my $simple = $self->_generate_simple_set('$self', $name, $spec, '$value');
-    my $code = "do { my (\$self, \$value) = \@_;\n";
+    my $value_store = '$_[0]';
+    my $code;
     if ($coerce) {
-      $code .=
-        "        \$value = "
-        .$self->_generate_coerce($name, '$value', $coerce).";\n";
+      $value_store = '$value';
+      $code = "do { my (\$self, \$value) = \@_;\n"
+        ."        \$value = "
+        .$self->_generate_coerce($name, $value_store, $coerce).";\n";
+    }
+    else {
+      $code = "do { my \$self = shift;\n";
     }
     if ($isa_check) {
       $code .= 
-        "        ".$self->_generate_isa_check($name, '$value', $isa_check).";\n";
+        "        ".$self->_generate_isa_check($name, $value_store, $isa_check).";\n";
     }
+    my $simple = $self->_generate_simple_set('$self', $name, $spec, $value_store);
     if ($trigger) {
-      my $fire = $self->_generate_trigger($name, '$self', '$value', $trigger);
+      my $fire = $self->_generate_trigger($name, '$self', $value_store, $trigger);
       $code .=
         "        ".$simple.";\n        ".$fire.";\n"
-        ."        \$value;\n";
+        ."        $value_store;\n";
     } else {
       $code .= "        ".$simple.";\n";
     }
@@ -396,16 +392,22 @@ sub _generate_isa_check {
 
 sub _generate_call_code {
   my ($self, $name, $type, $values, $sub) = @_;
+  $sub = \&{$sub} if blessed($sub);  # coderef if blessed
   if (my $quoted = quoted_from_sub($sub)) {
+    my $local = 1;
+    if ($values eq '@_' || $values eq '$_[0]') {
+      $local = 0;
+      $values = '@_';
+    }
     my $code = $quoted->[1];
     if (my $captures = $quoted->[2]) {
       my $cap_name = qq{\$${type}_captures_for_${name}};
       $self->{captures}->{$cap_name} = \$captures;
       Sub::Quote::inlinify(
-        $code, $values, Sub::Quote::capture_unroll($cap_name, $captures, 6), 1
+        $code, $values, Sub::Quote::capture_unroll($cap_name, $captures, 6), $local
       );
     } else {
-      Sub::Quote::inlinify($code, $values, undef, 1);
+      Sub::Quote::inlinify($code, $values, undef, $local);
     }
   } else {
     my $cap_name = qq{\$${type}_for_${name}};
@@ -496,11 +498,11 @@ sub _generate_core_set {
 sub _generate_simple_set {
   my ($self, $me, $name, $spec, $value) = @_;
   my $name_str = perlstring $name;
+  my $simple = $self->_generate_core_set($me, $name, $spec, $value);
 
   if ($spec->{weak_ref}) {
-    $value = '$preserve = '.$value;
-    my $simple = $self->_generate_core_set($me, $name, $spec, $value);
     require Scalar::Util;
+    my $get = $self->_generate_simple_get($me, $name, $spec);
 
     # Perl < 5.8.3 can't weaken refs to readonly vars
     # (e.g. string constants). This *can* be solved by:
@@ -511,12 +513,10 @@ sub _generate_simple_set {
     #
     # but requires XS and is just too damn crazy
     # so simply throw a better exception
-    my $weak_simple = "my \$preserve; Scalar::Util::weaken(${simple}); no warnings 'void'; \$preserve";
+    my $weak_simple = "do { Scalar::Util::weaken(${simple}); no warnings 'void'; $get }";
     Moo::_Utils::lt_5_8_3() ? <<"EOC" : $weak_simple;
-
-      my \$preserve;
       eval { Scalar::Util::weaken($simple); 1 }
-        ? do { no warnings 'void'; \$preserve; }
+        ? do { no warnings 'void'; $get }
         : do {
           if( \$@ =~ /Modification of a read-only value attempted/) {
             require Carp;
@@ -530,7 +530,7 @@ sub _generate_simple_set {
         }
 EOC
   } else {
-    $self->_generate_core_set($me, $name, $spec, $value);
+    $simple;
   }
 }
 
@@ -540,6 +540,17 @@ sub _generate_getset {
     ."\n      : ".$self->_generate_get($name, $spec)."\n    )";
 }
 
+sub _generate_asserter {
+  my ($self, $name, $spec) = @_;
+
+  "do {\n"
+   ."  my \$val = ".$self->_generate_get($name, $spec).";\n"
+   ."  unless (".$self->_generate_simple_has('$_[0]', $name, $spec).") {\n"
+   .qq!    die "Attempted to access '${name}' but it is not set";\n!
+   ."  }\n"
+   ."  \$val;\n"
+   ."}\n";
+}
 sub _generate_delegation {
   my ($self, $asserter, $target, $args) = @_;
   my $arg_string = do {
@@ -566,5 +577,22 @@ sub _generate_xs {
 }
 
 sub default_construction_string { '{}' }
+
+sub _validate_codulatable {
+  my ($self, $setting, $value, $into, $appended) = @_;
+  my $invalid = "Invalid $setting '" . overload::StrVal($value)
+    . "' for $into not a coderef";
+  $invalid .= " $appended" if $appended;
+
+  unless (ref $value and (ref $value eq 'CODE' or blessed($value))) {
+    die "$invalid or code-convertible object";
+  }
+
+  unless (eval { \&$value }) {
+    die "$invalid and could not be converted to a coderef: $@";
+  }
+
+  1;
+}
 
 1;

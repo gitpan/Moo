@@ -72,6 +72,8 @@ t/moo.t
 t/no-moo.t
 t/non-moo-extends.t
 t/not-both.t
+t/overloaded-coderefs.t
+t/sub-and-handles.t
 t/sub-defer.t
 t/sub-quote.t
 t/subconstructor.t
@@ -89,6 +91,7 @@ xt/lib/withautoclean/R1.pm
 xt/moo-consume-moose-role-coerce.t
 xt/moo-consume-mouse-role-coerce.t
 xt/moo-does-moose-role.t
+xt/moo-object-meta-can.t
 xt/moo-role-types.t
 xt/moo-roles-into-moose-class-attr-override-with-autoclean.t
 xt/moo-roles-into-moose-class.t

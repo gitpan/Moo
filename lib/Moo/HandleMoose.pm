@@ -56,7 +56,7 @@ sub inject_real_metaclass_for {
   my ($name) = @_;
   our %DID_INJECT;
   return Class::MOP::get_metaclass_by_name($name) if $DID_INJECT{$name};
-  require Moose; require Moo; require Moo::Role;
+  require Moose; require Moo; require Moo::Role; require Scalar::Util;
   Class::MOP::remove_metaclass_by_name($name);
   my ($am_role, $meta, $attr_specs, $attr_order) = do {
     if (my $info = $Moo::Role::INFO{$name}) {
@@ -65,13 +65,22 @@ sub inject_real_metaclass_for {
        { @attr_info },
        [ @attr_info[grep !($_ % 2), 0..$#attr_info] ]
       )
-    } else {
-      my $specs = Moo->_constructor_maker_for($name)->all_attribute_specs;
+    } elsif ( my $cmaker = Moo->_constructor_maker_for($name) ) {
+      my $specs = $cmaker->all_attribute_specs;
       (0, Moose::Meta::Class->initialize($name), $specs,
        [ sort { $specs->{$a}{index} <=> $specs->{$b}{index} } keys %$specs ]
       );
+    } else {
+       # This codepath is used if $name does not exist in $Moo::MAKERS
+       (0, Moose::Meta::Class->initialize($name), {}, [] )
     }
   };
+
+  for my $spec (values %$attr_specs) {
+    if (my $inflators = delete $spec->{moosify}) {
+      $_->($spec) for @$inflators;
+    }
+  }
 
   my %methods = %{Role::Tiny->_concrete_methods_of($name)};
 
@@ -86,20 +95,25 @@ sub inject_real_metaclass_for {
   Sub::Defer::undefer_sub($_) for grep defined, values %methods;
   my @attrs;
   {
+    my %spec_map = (
+      map { $_->name => $_->init_arg }
+      grep { $_->has_init_arg }
+      $meta->attribute_metaclass->meta->get_all_attributes
+    );
     # This local is completely not required for roles but harmless
     local @{_getstash($name)}{keys %methods};
     my %seen_name;
     foreach my $name (@$attr_order) {
       $seen_name{$name} = 1;
       my %spec = %{$attr_specs->{$name}};
-      delete $spec{index};
       $spec{is} = 'ro' if $spec{is} eq 'lazy' or $spec{is} eq 'rwp';
-      delete $spec{asserter};
       my $coerce = $spec{coerce};
       if (my $isa = $spec{isa}) {
         my $tc = $spec{isa} = do {
           if (my $mapped = $TYPE_MAP{$isa}) {
             my $type = $mapped->();
+            Scalar::Util::blessed($type) && $type->isa("Moose::Meta::TypeConstraint")
+              or die "error inflating attribute '$name' for package '$_[0]': \$TYPE_MAP{$isa} did not return a valid type constraint'";
             $coerce ? $type->create_child_type(name => $type->name) : $type;
           } else {
             Moose::Meta::TypeConstraint->new(
@@ -125,6 +139,10 @@ sub inject_real_metaclass_for {
         $spec{isa} = $tc;
         $spec{coerce} = 1;
       }
+      %spec =
+        map { $spec_map{$_} => $spec{$_} }
+        grep { exists $spec_map{$_} }
+        keys %spec;
       push @attrs, $meta->add_attribute($name => %spec);
     }
     foreach my $mouse (do { our %MOUSE; @{$MOUSE{$name}||[]} }) {
@@ -140,7 +158,8 @@ sub inject_real_metaclass_for {
       }
     }
   }
-  while (my ($meth_name, $meth_code) = each %methods) {
+  for my $meth_name (keys %methods) {
+    my $meth_code = $methods{$meth_name};
     $meta->add_method($meth_name, $meth_code) if $meth_code;
   }
 
