@@ -1,3 +1,22 @@
+1.003000 - 2013-07-15
+  - fix composing roles that require methods provided by the other (RT#82711)
+  - document optional use of Class::XSAccessor with caveats
+  - fix constructor generated when creating a class with
+    create_class_with_roles when the superclass constructor hasn't been
+    generated yet
+  - fix extending the constructor generator using Moo classes/roles
+  - non-lazy attribute defaults are used when applying a role to an object
+  - updated META files to list prerequisites in proper phases
+  - $Method::Generate::Accessor::CurrentAttribute hashref contains
+    information about attribute currently being processed (available
+    to exception objects thrown by "isa" and "coerce")
+  - properly die when composing a module that isn't a Role
+  - fix passing attribute parameters for traits when inflating to Moose
+  - fix inflating method modifiers applied to multiple methods
+  - fix documentation for Sub::Quote::capture_unroll
+  - add documentation noting Sub::Quote's use of strictures
+  - fix FOREIGNBUILDARGS not being called if no attributes created
+
 1.002000 - 2013-05-04
   - add 'moosify' attribute key to provide code for inflating to Moose
   - fix warnings about unknown attribute parameters on metaclass inflation

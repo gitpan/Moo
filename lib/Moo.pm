@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '1.002000'; # 1.2.0
+our $VERSION = '1.003000'; # 1.3.0
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -22,7 +22,7 @@ sub import {
   my $target = caller;
   my $class = shift;
   strictures->import;
-  if ($Moo::Role::INFO{$target} and $Moo::Role::INFO{$target}{is_role}) {
+  if ($Role::Tiny::INFO{$target} and $Role::Tiny::INFO{$target}{is_role}) {
     die "Cannot import Moo into a role";
   }
   $MAKERS{$target} ||= {};
@@ -93,6 +93,9 @@ sub _set_superclasses {
     Moo->_constructor_maker_for($target)
        ->register_attribute_specs(%{$old->all_attribute_specs});
   }
+  elsif (!$target->isa('Moo::Object')) {
+    Moo->_constructor_maker_for($target);
+  }
   no warnings 'once'; # piss off. -- mst
   $Moo::HandleMoose::MOUSE{$target} = [
     grep defined, map Mouse::Util::find_meta($_), @_
@@ -132,32 +135,27 @@ sub _accessor_maker_for {
 }
 
 sub _constructor_maker_for {
-  my ($class, $target, $select_super) = @_;
+  my ($class, $target) = @_;
   return unless $MAKERS{$target};
   $MAKERS{$target}{constructor} ||= do {
     require Method::Generate::Constructor;
     require Sub::Defer;
     my ($moo_constructor, $con);
 
-    if ($select_super && $MAKERS{$select_super}) {
-      $moo_constructor = 1;
-      $con = $MAKERS{$select_super}{constructor};
-    } else {
-      my $t_new = $target->can('new');
-      if ($t_new) {
-        if ($t_new == Moo::Object->can('new')) {
+    my $t_new = $target->can('new');
+    if ($t_new) {
+      if ($t_new == Moo::Object->can('new')) {
+        $moo_constructor = 1;
+      } elsif (my $defer_target = (Sub::Defer::defer_info($t_new)||[])->[0]) {
+        my ($pkg) = ($defer_target =~ /^(.*)::[^:]+$/);
+        if ($MAKERS{$pkg}) {
           $moo_constructor = 1;
-        } elsif (my $defer_target = (Sub::Defer::defer_info($t_new)||[])->[0]) {
-          my ($pkg) = ($defer_target =~ /^(.*)::[^:]+$/);
-          if ($MAKERS{$pkg}) {
-            $moo_constructor = 1;
-            $con = $MAKERS{$pkg}{constructor};
-          }
+          $con = $MAKERS{$pkg}{constructor};
         }
-      } else {
-        $moo_constructor = 1; # no other constructor, make a Moo one
       }
-    };
+    } else {
+      $moo_constructor = 1; # no other constructor, make a Moo one
+    }
     ($con ? ref($con) : 'Method::Generate::Constructor')
       ->new(
         package => $target,
@@ -312,6 +310,15 @@ to your code before Moose is loaded, but bear in mind that this switch is
 currently global and turns the mechanism off entirely so don't put this
 in library code.
 
+=head1 MOO AND CLASS::XSACCESSOR
+
+If a new enough version of L<Class::XSAccessor> is available, it
+will be used to generate simple accessors, readers, and writers for
+a speed boost.  Simple accessors are those without lazy defaults,
+type checks/coercions, or triggers.  Readers and writers generated
+by L<Class::XSAccessor> will behave slightly differently: they will
+reject attempts to call them with the incorrect number of parameters.
+
 =head1 MOO VERSUS ANY::MOOSE
 
 L<Any::Moose> will load L<Mouse> normally, and L<Moose> in a program using
@@ -366,7 +373,7 @@ This method should always return a hash reference of named options.
 
 If you are inheriting from a non-Moo class, the arguments passed to the parent
 class constructor can be manipulated by defining a C<FOREIGNBUILDARGS> method.
-It will recieve the same arguments as C<BUILDARGS>, and should return a list
+It will receive the same arguments as C<BUILDARGS>, and should return a list
 of arguments to pass to the parent class constructor.
 
 =head2 BUILD

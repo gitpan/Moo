@@ -95,17 +95,28 @@ sub inject_real_metaclass_for {
   Sub::Defer::undefer_sub($_) for grep defined, values %methods;
   my @attrs;
   {
-    my %spec_map = (
-      map { $_->name => $_->init_arg }
-      grep { $_->has_init_arg }
-      $meta->attribute_metaclass->meta->get_all_attributes
-    );
     # This local is completely not required for roles but harmless
     local @{_getstash($name)}{keys %methods};
     my %seen_name;
     foreach my $name (@$attr_order) {
       $seen_name{$name} = 1;
       my %spec = %{$attr_specs->{$name}};
+      my %spec_map = (
+        map { $_->name => $_->init_arg||$_->name }
+        (
+          (grep { $_->has_init_arg }
+             $meta->attribute_metaclass->meta->get_all_attributes),
+          grep { exists($_->{init_arg}) ? defined($_->init_arg) : 1 }
+          map {
+            my $meta = Moose::Util::resolve_metatrait_alias('Attribute', $_)
+                         ->meta;
+            map $meta->get_attribute($_), $meta->get_attribute_list
+          }  @{$spec{traits}||[]}
+        )
+      );
+      # have to hard code this because Moose's role meta-model is lacking
+      $spec_map{traits} ||= 'traits';
+
       $spec{is} = 'ro' if $spec{is} eq 'lazy' or $spec{is} eq 'rwp';
       my $coerce = $spec{coerce};
       if (my $isa = $spec{isa}) {
@@ -168,7 +179,8 @@ sub inject_real_metaclass_for {
     $meta->add_required_methods(@{$info->{requires}});
     foreach my $modifier (@{$info->{modifiers}}) {
       my ($type, @args) = @$modifier;
-      $meta->${\"add_${type}_method_modifier"}(@args);
+      my $code = pop @args;
+      $meta->${\"add_${type}_method_modifier"}($_, $code) for @args;
     }
   } else {
     foreach my $attr (@attrs) {

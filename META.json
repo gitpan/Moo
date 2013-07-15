@@ -4,7 +4,7 @@
       "mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.62, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "ExtUtils::MakeMaker version 6.68, CPAN::Meta::Converter version 2.131560",
    "license" : [
       "perl_5"
    ],
@@ -22,13 +22,11 @@
    },
    "prereqs" : {
       "build" : {
-         "requires" : {
-            "Test::Fatal" : "0.003",
-            "Test::More" : "0.96"
-         }
+         "requires" : {}
       },
       "configure" : {
          "requires" : {
+            "Dist::CheckConflicts" : "0.02",
             "ExtUtils::MakeMaker" : "0"
          }
       },
@@ -36,24 +34,38 @@
          "requires" : {
             "Class::Method::Modifiers" : "1.1",
             "Devel::GlobalDestruction" : "0.11",
+            "Dist::CheckConflicts" : "0.02",
             "Module::Runtime" : "0.012",
-            "Role::Tiny" : "1.002004",
+            "Role::Tiny" : "1.003",
+            "perl" : "v5.8.1",
             "strictures" : "1.004003"
+         }
+      },
+      "test" : {
+         "requires" : {
+            "Test::Fatal" : "0.003",
+            "Test::More" : "0.94"
          }
       }
    },
    "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
+         "mailto" : "bug-moo@rt.cpan.org",
          "web" : "http://rt.cpan.org/NoAuth/Bugs.html?Dist=Moo"
       },
       "license" : [
          "http://dev.perl.org/licenses/"
       ],
       "repository" : {
-         "url" : "git://git.shadowcat.co.uk/gitmo/Moo.git"
+         "type" : "git",
+         "url" : "git://git.shadowcat.co.uk/gitmo/Moo.git",
+         "web" : "http://git.shadowcat.co.uk/gitweb/gitweb.cgi?p=gitmo/Moo.git"
       },
       "x_IRC" : "irc://irc.perl.org/#moose"
    },
-   "version" : "1.002000"
+   "version" : "1.003000",
+   "x_breaks" : {
+      "HTML::Restrict" : "2.1.5"
+   }
 }

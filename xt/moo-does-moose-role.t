@@ -1,5 +1,6 @@
 use strictures 1;
 use Test::More;
+use Test::Fatal;
 
 BEGIN {
   package Ker;
@@ -233,5 +234,58 @@ is(Planker->meta->find_attribute_by_name('vv')->documentation, 'moosify foo', 'm
 is( Plonker->meta->find_attribute_by_name('kk')->documentation,
     'parentchild',
     'moosify applies for overridden attributes with roles');
+
+{
+  package MooseAttrTrait;
+  use Moose::Role;
+
+  has 'extra_attr' => (is => 'ro');
+  has 'extra_attr_noinit' => (is => 'ro', init_arg => undef);
+}
+
+{
+  local $SIG{__WARN__} = sub { fail "warning: $_[0]" };
+  package UsingMooseTrait;
+  use Moo;
+
+  has one => (
+    is => 'ro',
+    traits => ['MooseAttrTrait'],
+    extra_attr => 'one',
+    extra_attr_noinit => 'two',
+  );
+}
+
+ok( UsingMooseTrait->meta
+      ->find_attribute_by_name('one')->can('extra_attr'),
+    'trait was properly applied');
+is( UsingMooseTrait->meta->find_attribute_by_name('one')
+      ->extra_attr,
+    'one',
+    'trait attributes maintain values');
+
+{
+  package NeedTrap;
+  use Moo::Role;
+
+  requires 'trap';
+}
+
+is exception {
+  package Splattrap;
+  use Moo;
+  sub monkey {}
+
+  with qw(Splat NeedTrap);
+}, undef, 'requires satisfied by Moose attribute composed at the same time';
+
+{
+  package HasMonkey;
+  use Moo;
+  sub monkey {}
+}
+is exception {
+  Moo::Role->create_class_with_roles('HasMonkey', 'Splat', 'NeedTrap');
+}, undef, ' ... and when created by create_class_with_roles';
 
 done_testing;

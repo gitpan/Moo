@@ -18,6 +18,17 @@ BEGIN {
   ;
 }
 
+sub _SIGDIE
+{
+  our ($CurrentAttribute, $OrigSigDie);
+  $OrigSigDie ||= sub { die $_[0] };
+  
+  return $OrigSigDie->(@_) if ref($_[0]);
+  
+  my $attr_desc = _attr_desc(@$CurrentAttribute{qw(name init_arg)});
+  $OrigSigDie->("$CurrentAttribute->{step} for $attr_desc failed: $_[0]");
+}
+
 sub _die_overwrite
 {
   my ($pkg, $method, $type) = @_;
@@ -45,10 +56,8 @@ sub generate_method {
   }
   if (exists $spec->{builder}) {
     if(ref $spec->{builder}) {
-      die "Invalid builder for $into->$name - not a method name, coderef or"
-        . " code-convertible object"
-        unless ref $spec->{builder} eq 'CODE'
-        or (blessed($spec->{builder}) and eval { \&{$spec->{builder}} });
+      $self->_validate_codulatable('builder', $spec->{builder},
+        "$into->$name", 'or a method name');
       $spec->{builder_sub} = $spec->{builder};
       $spec->{builder} = 1;
     }
@@ -237,6 +246,13 @@ sub _generate_get {
   }
 }
 
+sub generate_simple_has {
+  my $self = shift;
+  $self->{captures} = {};
+  my $code = $self->_generate_simple_has(@_);
+  ($code, delete $self->{captures});
+}
+
 sub _generate_simple_has {
   my ($self, $me, $name) = @_;
   "exists ${me}->{${\perlstring $name}}";
@@ -251,6 +267,13 @@ sub generate_get_default {
   my $self = shift;
   $self->{captures} = {};
   my $code = $self->_generate_get_default(@_);
+  ($code, delete $self->{captures});
+}
+
+sub generate_use_default {
+  my $self = shift;
+  $self->{captures} = {};
+  my $code = $self->_generate_use_default(@_);
   ($code, delete $self->{captures});
 }
 
@@ -347,7 +370,9 @@ sub _attr_desc {
 sub _generate_coerce {
   my ($self, $name, $value, $coerce, $init_arg) = @_;
   $self->_generate_die_prefix(
-    "coercion for ${\_attr_desc($name, $init_arg)} failed: ",
+    $name,
+    "coercion",
+    $init_arg,
     $self->_generate_call_code($name, 'coerce', "${value}", $coerce)
   );
 }
@@ -372,12 +397,15 @@ sub generate_isa_check {
 }
 
 sub _generate_die_prefix {
-  my ($self, $prefix, $inside) = @_;
+  my ($self, $name, $prefix, $arg, $inside) = @_;
   "do {\n"
-  .'  my $sig_die = $SIG{__DIE__} || sub { die $_[0] };'."\n"
-  .'  local $SIG{__DIE__} = sub {'."\n"
-  .'    $sig_die->(ref($_[0]) ? $_[0] : '.perlstring($prefix).'.$_[0]);'."\n"
-  .'  };'."\n"
+  .'  local $Method::Generate::Accessor::CurrentAttribute = {'
+  .'    init_arg => '.(defined $arg ? B::perlstring($arg) : 'undef') . ",\n"
+  .'    name     => '.B::perlstring($name).",\n"
+  .'    step     => '.B::perlstring($prefix).",\n"
+  ."  };\n"
+  .'  local $Method::Generate::Accessor::OrigSigDie = $SIG{__DIE__};'."\n"
+  .'  local $SIG{__DIE__} = \&Method::Generate::Accessor::_SIGDIE;'."\n"
   .$inside
   ."}\n"
 }
@@ -385,7 +413,9 @@ sub _generate_die_prefix {
 sub _generate_isa_check {
   my ($self, $name, $value, $check, $init_arg) = @_;
   $self->_generate_die_prefix(
-    "isa check for ${\_attr_desc($name, $init_arg)} failed: ",
+    $name,
+    "isa check",
+    $init_arg,
     $self->_generate_call_code($name, 'isa_check', $value, $check)
   );
 }
@@ -428,7 +458,7 @@ sub _generate_populate_set {
   if ($self->has_eager_default($name, $spec)) {
     my $get_indent = ' ' x ($spec->{isa} ? 6 : 4);
     my $get_default = $self->_generate_get_default(
-                        '$new', $_, $spec
+                        '$new', $name, $spec
                       );
     my $get_value = 
       defined($spec->{init_arg})
