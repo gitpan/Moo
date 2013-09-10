@@ -20,8 +20,10 @@ lib/Sub/Quote.pm
 maint/bump-version
 maint/fulltest
 maint/Makefile.PL.include
+maint/mkfat
+maint/travis-perlbrew
 Makefile.PL
-MANIFEST			This list of files
+MANIFEST
 t/accessor-coerce.t
 t/accessor-default.t
 t/accessor-generator-extension.t
@@ -78,11 +80,14 @@ t/non-moo-extends.t
 t/not-both.t
 t/overloaded-coderefs.t
 t/sub-and-handles.t
+t/sub-defer-threads.t
 t/sub-defer.t
+t/sub-quote-threads.t
 t/sub-quote.t
 t/subconstructor.t
 t/undef-bug.t
 t/use-after-no.t
+xt/global-destruct-jenga.t
 xt/handle_moose.t
 xt/implicit-moose-types.t
 xt/jenga.t
@@ -115,6 +120,8 @@ xt/moox-types.t
 xt/more-jenga.t
 xt/super-jenga.t
 xt/test-my-dependents.t
+xt/type-inflate-coercion.t
+xt/type-inflate.t
 xt/withautoclean.t
 META.yml                                 Module YAML meta-data (added by MakeMaker)
 META.json                                Module JSON meta-data (added by MakeMaker)

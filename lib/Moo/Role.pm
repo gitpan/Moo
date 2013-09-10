@@ -5,6 +5,9 @@ use Moo::_Utils;
 use Role::Tiny ();
 use base qw(Role::Tiny);
 
+our $VERSION = '1.003001';
+$VERSION = eval $VERSION;
+
 require Moo::sification;
 
 BEGIN { *INFO = \%Role::Tiny::INFO }
@@ -27,12 +30,18 @@ sub import {
   }
   $INFO{$target} ||= {};
   # get symbol table reference
-  my $stash = do { no strict 'refs'; \%{"${target}::"} };
+  my $stash = _getstash($target);
   _install_tracked $target => has => sub {
-    my ($name_proto, %spec) = @_;
-    my $name_isref = ref $name_proto eq 'ARRAY';
-    foreach my $name ($name_isref ? @$name_proto : $name_proto) {
-      my $spec_ref = $name_isref ? +{%spec} : \%spec;
+    my $name_proto = shift;
+    my @name_proto = ref $name_proto eq 'ARRAY' ? @$name_proto : $name_proto;
+    if (@_ % 2 != 0) {
+      require Carp;
+      Carp::croak("Invalid options for " . join(', ', map "'$_'", @name_proto)
+        . " attribute(s): even number of arguments expected, got " . scalar @_)
+    }
+    my %spec = @_;
+    foreach my $name (@name_proto) {
+      my $spec_ref = @name_proto > 1 ? +{%spec} : \%spec;
       ($INFO{$target}{accessor_maker} ||= do {
         require Method::Generate::Accessor;
         Method::Generate::Accessor->new
@@ -231,9 +240,7 @@ sub apply_single_role_to_package {
 sub create_class_with_roles {
   my ($me, $superclass, @roles) = @_;
 
-  my $new_name = join(
-    '__WITH__', $superclass, my $compose_name = join '__AND__', @roles
-  );
+  my ($new_name, $compose_name) = $me->_composite_name($superclass, @roles);
 
   return $new_name if $Role::Tiny::COMPOSED{class}{$new_name};
 

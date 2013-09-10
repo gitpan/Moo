@@ -4,7 +4,7 @@
       "mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.68, CPAN::Meta::Converter version 2.131560",
+   "generated_by" : "ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.131560",
    "license" : [
       "perl_5"
    ],
@@ -30,13 +30,26 @@
             "ExtUtils::MakeMaker" : "0"
          }
       },
+      "develop" : {
+         "requires" : {
+            "Class::XSAccessor" : "0",
+            "Moose" : "0",
+            "MooseX::Types::Common::Numeric" : "0",
+            "Mouse" : "0",
+            "bareword::filehandles" : "0",
+            "indirect" : "0",
+            "multidimensional" : "0",
+            "namespace::autoclean" : "0",
+            "namespace::clean" : "0"
+         }
+      },
       "runtime" : {
          "requires" : {
             "Class::Method::Modifiers" : "1.1",
             "Devel::GlobalDestruction" : "0.11",
             "Dist::CheckConflicts" : "0.02",
             "Module::Runtime" : "0.012",
-            "Role::Tiny" : "1.003",
+            "Role::Tiny" : "1.003002",
             "perl" : "v5.8.1",
             "strictures" : "1.004003"
          }
@@ -51,8 +64,8 @@
    "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
-         "mailto" : "bug-moo@rt.cpan.org",
-         "web" : "http://rt.cpan.org/NoAuth/Bugs.html?Dist=Moo"
+         "mailto" : "bug-Moo@rt.cpan.org",
+         "web" : "https://rt.cpan.org/Public/Dist/Display.html?Name=Moo"
       },
       "license" : [
          "http://dev.perl.org/licenses/"
@@ -64,7 +77,7 @@
       },
       "x_IRC" : "irc://irc.perl.org/#moose"
    },
-   "version" : "1.003000",
+   "version" : "1.003001",
    "x_breaks" : {
       "HTML::Restrict" : "2.1.5"
    }

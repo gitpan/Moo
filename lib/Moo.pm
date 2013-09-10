@@ -5,7 +5,7 @@ use Moo::_Utils;
 use B 'perlstring';
 use Sub::Defer ();
 
-our $VERSION = '1.003000'; # 1.3.0
+our $VERSION = '1.003001';
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -37,12 +37,18 @@ sub import {
     $class->_maybe_reset_handlemoose($target);
   };
   _install_tracked $target => has => sub {
-    my ($name_proto, %spec) = @_;
-    my $name_isref = ref $name_proto eq 'ARRAY';
-    foreach my $name ($name_isref ? @$name_proto : $name_proto) {
-      # Note that when $name_proto is an arrayref, each attribute
+    my $name_proto = shift;
+    my @name_proto = ref $name_proto eq 'ARRAY' ? @$name_proto : $name_proto;
+    if (@_ % 2 != 0) {
+      require Carp;
+      Carp::croak("Invalid options for " . join(', ', map "'$_'", @name_proto)
+        . " attribute(s): even number of arguments expected, got " . scalar @_)
+    }
+    my %spec = @_;
+    foreach my $name (@name_proto) {
+      # Note that when multiple attributes specified, each attribute
       # needs a separate \%specs hashref
-      my $spec_ref = $name_isref ? +{%spec} : \%spec;
+      my $spec_ref = @name_proto > 1 ? +{%spec} : \%spec;
       $class->_constructor_maker_for($target)
             ->register_attribute_specs($name, $spec_ref);
       $class->_accessor_maker_for($target)
@@ -135,27 +141,32 @@ sub _accessor_maker_for {
 }
 
 sub _constructor_maker_for {
-  my ($class, $target) = @_;
+  my ($class, $target, $select_super) = @_;
   return unless $MAKERS{$target};
   $MAKERS{$target}{constructor} ||= do {
     require Method::Generate::Constructor;
     require Sub::Defer;
     my ($moo_constructor, $con);
 
-    my $t_new = $target->can('new');
-    if ($t_new) {
-      if ($t_new == Moo::Object->can('new')) {
-        $moo_constructor = 1;
-      } elsif (my $defer_target = (Sub::Defer::defer_info($t_new)||[])->[0]) {
-        my ($pkg) = ($defer_target =~ /^(.*)::[^:]+$/);
-        if ($MAKERS{$pkg}) {
-          $moo_constructor = 1;
-          $con = $MAKERS{$pkg}{constructor};
-        }
-      }
+    if ($select_super && $MAKERS{$select_super}) {
+      $moo_constructor = 1;
+      $con = $MAKERS{$select_super}{constructor};
     } else {
-      $moo_constructor = 1; # no other constructor, make a Moo one
-    }
+      my $t_new = $target->can('new');
+      if ($t_new) {
+        if ($t_new == Moo::Object->can('new')) {
+          $moo_constructor = 1;
+        } elsif (my $defer_target = (Sub::Defer::defer_info($t_new)||[])->[0]) {
+          my ($pkg) = ($defer_target =~ /^(.*)::[^:]+$/);
+          if ($MAKERS{$pkg}) {
+            $moo_constructor = 1;
+            $con = $MAKERS{$pkg}{constructor};
+          }
+        }
+      } else {
+        $moo_constructor = 1; # no other constructor, make a Moo one
+      }
+    };
     ($con ? ref($con) : 'Method::Generate::Constructor')
       ->new(
         package => $target,
@@ -518,7 +529,7 @@ Takes a coderef which is meant to coerce the attribute.  The basic idea is to
 do something like the following:
 
  coerce => sub {
-   $_[0] + 1 unless $_[0] % 2
+   $_[0] % 2 ? $_[0] : $_[0] + 1
  },
 
 Note that L<Moo> will always fire your coercion: this is to permit

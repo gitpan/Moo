@@ -21,7 +21,7 @@ my %RUN_DEPS = (
   'Class::Method::Modifiers' => 1.10, # or RT#80194
   'strictures' => 1.004003,
   'Module::Runtime' => 0.012, # for RT#74789
-  'Role::Tiny' => 1.003000,
+  'Role::Tiny' => 1.003002,
   'Devel::GlobalDestruction' => 0.11, # for RT#78617
   'Dist::CheckConflicts' => 0.02,
 );
@@ -29,6 +29,7 @@ my %RUN_DEPS = (
 my %extra_info = (
   'meta-spec' => { version => 2 },
   resources => {
+    # r/w: gitmo@git.shadowcat.co.uk:Moo.git
     repository => {
       url => 'git://git.shadowcat.co.uk/gitmo/Moo.git',
       web => 'http://git.shadowcat.co.uk/gitweb/gitweb.cgi?p=gitmo/Moo.git',
@@ -36,8 +37,8 @@ my %extra_info = (
     },
     x_IRC => 'irc://irc.perl.org/#moose',
     bugtracker => {
-      web => 'http://rt.cpan.org/NoAuth/Bugs.html?Dist=Moo',
-      mailto => 'bug-moo@rt.cpan.org',
+      web => 'https://rt.cpan.org/Public/Dist/Display.html?Name=Moo',
+      mailto => 'bug-Moo@rt.cpan.org',
     },
     license => [ 'http://dev.perl.org/licenses/' ],
   },
@@ -46,6 +47,12 @@ my %extra_info = (
     build     => { requires => { %BUILD_DEPS } },
     test      => { requires => { %TEST_DEPS } },
     runtime   => { requires => { %RUN_DEPS, perl => '5.8.1' } },
+    develop   => { requires => { map { $_ => 0 } qw(
+      Class::XSAccessor
+      indirect multidimensional bareword::filehandles
+      Moose Mouse namespace::clean namespace::autoclean
+      MooseX::Types::Common::Numeric
+    ) } },
   },
 );
 

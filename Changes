@@ -1,3 +1,14 @@
+1.003001 - 2013-09-10
+  - abbreviate class names from created by create_class_with_roles if they are
+    too long for perl to handle (RT#83248)
+  - prevent destructors from failing in global destruction for certain
+    combinations of Moo and Moose classes subclassing each other (RT#87810)
+  - clarify in docs that Sub::Quote's captured variables are copies, not aliases
+  - fix infinite recursion if an isa check fails due to another isa check
+    (RT#87575)
+  - fix Sub::Quote and Sub::Defer under threads (RT#87043)
+  - better diagnostics when bad parameters given to has
+
 1.003000 - 2013-07-15
   - fix composing roles that require methods provided by the other (RT#82711)
   - document optional use of Class::XSAccessor with caveats

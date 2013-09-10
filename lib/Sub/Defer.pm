@@ -3,6 +3,10 @@ package Sub::Defer;
 use strictures 1;
 use base qw(Exporter);
 use Moo::_Utils;
+use Scalar::Util qw(weaken);
+
+our $VERSION = '1.003001';
+$VERSION = eval $VERSION;
 
 our @EXPORT = qw(defer_sub undefer_sub);
 
@@ -13,6 +17,8 @@ sub undefer_sub {
   my ($target, $maker, $undeferred_ref) = @{
     $DEFERRED{$deferred}||return $deferred
   };
+  return ${$undeferred_ref}
+    if ${$undeferred_ref};
   ${$undeferred_ref} = my $made = $maker->();
 
   # make sure the method slot has not changed since deferral time
@@ -23,7 +29,7 @@ sub undefer_sub {
     # _install_coderef calls are not necessary --ribasushi
     *{_getglob($target)} = $made;
   }
-  push @{$DEFERRED{$made} = $DEFERRED{$deferred}}, $made;
+  weaken($DEFERRED{$made} = $DEFERRED{$deferred});
 
   return $made;
 }
@@ -36,14 +42,20 @@ sub defer_info {
 sub defer_sub {
   my ($target, $maker) = @_;
   my $undeferred;
-  my $deferred_string;
+  my $deferred_info;
   my $deferred = sub {
-    goto &{$undeferred ||= undefer_sub($deferred_string)};
+    $undeferred ||= undefer_sub($deferred_info->[3]);
+    goto &$undeferred;
   };
-  $deferred_string = "$deferred";
-  $DEFERRED{$deferred} = [ $target, $maker, \$undeferred ];
+  $deferred_info = [ $target, $maker, \$undeferred, $deferred ];
+  weaken($DEFERRED{$deferred} = $deferred_info);
   _install_coderef($target => $deferred) if defined $target;
   return $deferred;
+}
+
+sub CLONE {
+  %DEFERRED = map { defined $_ ? ($_->[3] => $_) : () } values %DEFERRED;
+  weaken($_) for values %DEFERRED;
 }
 
 1;
