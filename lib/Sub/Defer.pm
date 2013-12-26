@@ -5,7 +5,7 @@ use base qw(Exporter);
 use Moo::_Utils;
 use Scalar::Util qw(weaken);
 
-our $VERSION = '1.003001';
+our $VERSION = '1.004000';
 $VERSION = eval $VERSION;
 
 our @EXPORT = qw(defer_sub undefer_sub);
@@ -59,6 +59,7 @@ sub CLONE {
 }
 
 1;
+__END__
 
 =head1 NAME
 
@@ -114,3 +115,5 @@ See L<Moo> for authors.
 =head1 COPYRIGHT AND LICENSE
 
 See L<Moo> for the copyright and license.
+
+=cut

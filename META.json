@@ -4,7 +4,7 @@
       "mst - Matt S. Trout (cpan:MSTROUT) <mst@shadowcat.co.uk>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.131560",
+   "generated_by" : "ExtUtils::MakeMaker version 6.82, CPAN::Meta::Converter version 2.132830",
    "license" : [
       "perl_5"
    ],
@@ -16,7 +16,6 @@
    "no_index" : {
       "directory" : [
          "t",
-         "inc",
          "xt"
       ]
    },
@@ -31,16 +30,19 @@
          }
       },
       "develop" : {
-         "requires" : {
-            "Class::XSAccessor" : "0",
+         "recommends" : {
             "Moose" : "0",
             "MooseX::Types::Common::Numeric" : "0",
             "Mouse" : "0",
-            "bareword::filehandles" : "0",
-            "indirect" : "0",
-            "multidimensional" : "0",
+            "Type::Tiny" : "0",
             "namespace::autoclean" : "0",
             "namespace::clean" : "0"
+         },
+         "requires" : {
+            "Class::XSAccessor" : "0",
+            "bareword::filehandles" : "0",
+            "indirect" : "0",
+            "multidimensional" : "0"
          }
       },
       "runtime" : {
@@ -48,9 +50,10 @@
             "Class::Method::Modifiers" : "1.1",
             "Devel::GlobalDestruction" : "0.11",
             "Dist::CheckConflicts" : "0.02",
+            "Import::Into" : "1.002",
             "Module::Runtime" : "0.012",
             "Role::Tiny" : "1.003002",
-            "perl" : "v5.8.1",
+            "perl" : "5.008001",
             "strictures" : "1.004003"
          }
       },
@@ -72,12 +75,12 @@
       ],
       "repository" : {
          "type" : "git",
-         "url" : "git://git.shadowcat.co.uk/gitmo/Moo.git",
-         "web" : "http://git.shadowcat.co.uk/gitweb/gitweb.cgi?p=gitmo/Moo.git"
+         "url" : "https://github.com/moose/Moo.git",
+         "web" : "https://github.com/moose/Moo"
       },
       "x_IRC" : "irc://irc.perl.org/#moose"
    },
-   "version" : "1.003001",
+   "version" : "1.004000",
    "x_breaks" : {
       "HTML::Restrict" : "2.1.5"
    }

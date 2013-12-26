@@ -59,4 +59,21 @@ my $quoted2 = quoted_from_sub(\&Foo::four);
 is $quoted2->[1], undef,
   "can't get quoted from installed sub after undefer";
 
+my $broken_quoted = quote_sub q{
+  return 5$;
+};
+
+like(
+  exception { $broken_quoted->() }, qr/Eval went very, very wrong/,
+  "quoted sub with syntax error dies when called"
+);
+
+sub in_main { 1 }
+is exception { quote_sub(q{ in_main(); })->(); }, undef, 'context preserved in quoted sub';
+
+{
+  no strict 'refs';
+  is exception { quote_sub(q{ my $foo = "some_variable"; $$foo; })->(); }, undef, 'hints are preserved';
+}
+
 done_testing;

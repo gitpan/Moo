@@ -10,6 +10,7 @@ lib/Moo/_mro.pm
 lib/Moo/_Utils.pm
 lib/Moo/Conflicts.pm
 lib/Moo/HandleMoose.pm
+lib/Moo/HandleMoose/_TypeMap.pm
 lib/Moo/HandleMoose/FakeMetaClass.pm
 lib/Moo/Object.pm
 lib/Moo/Role.pm
@@ -20,10 +21,10 @@ lib/Sub/Quote.pm
 maint/bump-version
 maint/fulltest
 maint/Makefile.PL.include
-maint/mkfat
+maint/travis-install
 maint/travis-perlbrew
 Makefile.PL
-MANIFEST
+MANIFEST			This list of files
 t/accessor-coerce.t
 t/accessor-default.t
 t/accessor-generator-extension.t
@@ -61,6 +62,7 @@ t/lazy_isa.t
 t/lib/base_class.pm
 t/lib/ClassicObject.pm
 t/lib/ClobberUnderscore.pm
+t/lib/ComplexWriter.pm
 t/lib/ExtRobot.pm
 t/lib/MooObjectWithDelegate.pm
 t/lib/sub_class.pm
@@ -97,6 +99,7 @@ xt/lib/ExampleMooseRoleOne.pm
 xt/lib/ExampleMooseRoleTwo.pm
 xt/lib/withautoclean/Class.pm
 xt/lib/withautoclean/R1.pm
+xt/moo-attr-handles-moose-role.t
 xt/moo-consume-moose-role-coerce.t
 xt/moo-consume-moose-role-multiple.t
 xt/moo-consume-mouse-role-coerce.t
@@ -115,12 +118,12 @@ xt/moose-lazy.t
 xt/moose-method-modifiers.t
 xt/moose-override-attribute-from-moo-role.t
 xt/moose-override-attribute-with-plus-syntax.t
-xt/moox-types-coercion.t
-xt/moox-types.t
 xt/more-jenga.t
+xt/strictures.t
 xt/super-jenga.t
 xt/test-my-dependents.t
 xt/type-inflate-coercion.t
+xt/type-inflate-threads.t
 xt/type-inflate.t
 xt/withautoclean.t
 META.yml                                 Module YAML meta-data (added by MakeMaker)

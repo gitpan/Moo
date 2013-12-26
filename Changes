@@ -1,3 +1,23 @@
+Revision history for Moo
+
+1.004000 - 2013-12-26
+  - fix handling of type inflation when used with threads
+  - don't include meta method when consuming Mouse roles
+  - inhale Moose roles for has attr => ( handles => "RoleName" )
+  - provide useful error if attribute defined as required but with
+    init_arg => undef
+  - document that BUILDARGS isn't called when there are no attributes
+  - omit sub imported before use Moo from Moose method inflation
+  - check for FOREIGNBUILDARGS only once per class instead of on each
+    instantiation
+  - take advantage of XS predicates from newer versions of Class::XSAccessor
+  - always try to load superclasses and roles, and only fall back on the
+    heuristic of checking for subs if the file doesn't exist
+  - fix handling of attributes with names that aren't valid identifiers
+  - Quoted subs now preserve the package and pragmas from their calling code
+  - the official Moo git repository has moved to the Moose organization on
+    GitHub: https://github.com/moose/Moo
+
 1.003001 - 2013-09-10
   - abbreviate class names from created by create_class_with_roles if they are
     too long for perl to handle (RT#83248)

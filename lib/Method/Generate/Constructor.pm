@@ -27,6 +27,10 @@ sub register_attribute_specs {
         }
       }
     }
+    if (exists $new_spec->{init_arg} && !defined $new_spec->{init_arg}
+        && $new_spec->{required}) {
+      die "${name} attribute can't be required with init_arg => undef";
+    }
     $new_spec->{index} = scalar keys %$specs
       unless defined $new_spec->{index};
     $specs->{$name} = $new_spec;
@@ -48,9 +52,17 @@ sub construction_string {
     ||= $self->_build_construction_string;
 }
 
+sub buildall_generator {
+  require Method::Generate::BuildAll;
+  Method::Generate::BuildAll->new;
+}
+
 sub _build_construction_string {
-  'bless('
-    .$_[0]->accessor_generator->default_construction_string
+  my ($self) = @_;
+  my $builder = $self->{construction_builder};
+  $builder ? $self->$builder
+    : 'bless('
+    .$self->accessor_generator->default_construction_string
     .', $class);'
 }
 
@@ -84,8 +96,7 @@ sub generate_method {
   $body .= '    my $new = '.$self->construction_string.";\n";
   $body .= $self->_assign_new($spec);
   if ($into->can('BUILD')) {
-    require Method::Generate::BuildAll;
-    $body .= Method::Generate::BuildAll->new->buildall_body_for(
+    $body .= $self->buildall_generator->buildall_body_for(
       $into, '$new', '$args'
     );
   }
@@ -191,6 +202,7 @@ Moo->_constructor_maker_for(__PACKAGE__)->register_attribute_specs(
   },
   accessor_generator => { is => 'ro' },
   construction_string => { is => 'lazy' },
+  construction_builder => { is => 'lazy' },
   subconstructor_handler => { is => 'ro' },
   package => { is => 'ro' },
 );

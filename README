@@ -5,6 +5,7 @@ SYNOPSIS
      package Cat::Food;
 
      use Moo;
+     use namespace::clean;
 
      sub feed_lion {
        my $self = shift;
@@ -208,7 +209,9 @@ IMPORTED SUBROUTINES
      extends 'Parent::Class';
 
     Declares base class. Multiple superclasses can be passed for multiple
-    inheritance (but please use roles instead).
+    inheritance (but please use roles instead). The class will be loaded,
+    however no errors will be triggered if it can't be found and there are
+    already subs in the class.
 
     Calling extends more than once will REPLACE your superclasses, not add
     to them like 'use base' would.
@@ -222,6 +225,7 @@ IMPORTED SUBROUTINES
 
     Composes one or more Moo::Role (or Role::Tiny) roles into the current
     class. An error will be raised if these roles have conflicting methods.
+    The roles will be loaded using the same mechansim as "extends" uses.
 
   has
      has attr => (
@@ -484,8 +488,10 @@ SUB QUOTE AWARE
 
     To do this, you can write
 
-      use Moo;
       use Sub::Quote;
+
+      use Moo;
+      use namespace::clean;
 
       has foo => (
         is => 'ro',
@@ -515,6 +521,47 @@ SUB QUOTE AWARE
 
     See Sub::Quote for more information, including how to pass lexical
     captures that will also be compiled into the subroutine.
+
+CLEANING UP IMPORTS
+    Moo will not clean up imported subroutines for you; you will have to do
+    that manually. The recommended way to do this is to declare your imports
+    first, then "use Moo", then "use namespace::clean". Anything imported
+    before namespace::clean will be scrubbed. Anything imported or declared
+    after will be still be available.
+
+     package Record;
+
+     use Digest::MD5 qw(md5_hex);
+
+     use Moo;
+     use namespace::clean;
+
+     has name => (is => 'ro', required => 1);
+     has id => (is => 'lazy');
+     sub _build_id {
+       my ($self) = @_;
+       return md5_hex($self->name);
+     }
+
+     1;
+
+    If you were to import "md5_hex" after namespace::clean you would be able
+    to call "->md5_hex()" on your "Record" instances (and it probably
+    wouldn't do what you expect!).
+
+    Moo::Roles behave slightly differently. Since their methods are composed
+    into the consuming class, they can do a little more for you
+    automatically. As long as you declare your imports before calling "use
+    Moo::Role", those imports and the ones Moo::Role itself provides will
+    not be composed into consuming classes, so there's usually no need to
+    use namespace::clean.
+
+    On namespace::autoclean: If you're coming to Moo from the Moose world,
+    you may be accustomed to using namespace::autoclean in all your
+    packages. This is not recommended for Moo packages, because
+    namespace::autoclean will inflate your class to a full Moose class.
+    It'll work, but you will lose the benefits of Moo. Instead you are
+    recommended to just use namespace::clean.
 
 INCOMPATIBILITIES WITH MOOSE
     There is no built-in type system. "isa" is verified with a coderef; if
@@ -578,8 +625,16 @@ INCOMPATIBILITIES WITH MOOSE
     require it, the metaclass inflation for coerce alone is a trifle insane
     and if you attempt to subtype the result will almost certainly break.
 
-    Handling of warnings: when you "use Moo" we enable FATAL warnings. The
-    nearest similar invocation for Moose would be:
+    "BUILDARGS" is not triggered if your class does not have any attributes.
+    Without attributes, "BUILDARGS" return value would be ignored, so we
+    just skip calling the method instead.
+
+    Handling of warnings: when you "use Moo" we enable FATAL warnings, and
+    some several extra pragmas when used in development: indirect,
+    multidimensional, and bareword::filehandles. See the strictures
+    documentation for the details on this.
+
+    A similar invocation for Moose would be:
 
       use Moose;
       use warnings FATAL => "all";

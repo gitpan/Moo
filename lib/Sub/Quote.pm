@@ -9,7 +9,7 @@ use B 'perlstring';
 use Scalar::Util qw(weaken);
 use base qw(Exporter);
 
-our $VERSION = '1.003001';
+our $VERSION = '1.004000';
 $VERSION = eval $VERSION;
 
 our @EXPORT = qw(quote_sub unquote_sub quoted_from_sub);
@@ -33,19 +33,19 @@ sub capture_unroll {
 sub inlinify {
   my ($code, $args, $extra, $local) = @_;
   my $do = 'do { '.($extra||'');
-  if (my ($code_args, $body) = $code =~ / +my \(([^)]+)\) = \@_;(.*)$/s) {
-    if ($code_args eq $args) {
-      $do.$body.' }'
-    } else {
-      $do.'my ('.$code_args.') = ('.$args.'); '.$body.' }';
-    }
-  } else {
-    my $assign = '';
-    if ($local || $args ne '@_') {
-      $assign = ($local ? 'local ' : '').'@_ = ('.$args.'); ';
-    }
-    $do.$assign.$code.' }';
+  if ($code =~ s/^(\s*package\s+([a-zA-Z0-9:]+);)//) {
+    $do .= $1;
   }
+  my $assign = '';
+  if (my ($code_args) = $code =~ /^\s*my\s*\(([^)]+)\)\s*=\s*\@_;$/s) {
+    if ($code_args ne $args) {
+      $assign = 'my ('.$code_args.') = ('.$args.'); ';
+    }
+  }
+  elsif ($local || $args ne '@_') {
+    $assign = ($local ? 'local ' : '').'@_ = ('.$args.'); ';
+  }
+  $do.$assign.$code.' }';
 }
 
 sub quote_sub {
@@ -59,10 +59,23 @@ sub quote_sub {
     (ref($_[-1]) eq 'HASH' and ref($_[-2]) eq 'HASH')
       ? pop
       : {};
-  my $captures = pop if ref($_[-1]) eq 'HASH';
+  my $captures = ref($_[-1]) eq 'HASH' ? pop : undef;
   undef($captures) if $captures && !keys %$captures;
   my $code = pop;
   my $name = $_[0];
+  my ($package, $hints, $bitmask, $hintshash) = (caller(0))[0,8,9,10];
+  my $context
+    ="package $package;\n"
+    ."BEGIN {\n"
+    ."  \$^H = ".B::perlstring($hints).";\n"
+    ."  \${^WARNING_BITS} = ".B::perlstring($bitmask).";\n"
+    ."  \%^H = (\n"
+    . join('', map
+     "    ".B::perlstring($_)." => ".B::perlstring($hintshash->{$_}).",",
+      keys %$hintshash)
+    ."  );\n"
+    ."}\n";
+  $code = "$context$code";
   my $quoted_info;
   my $deferred = defer_sub +($options->{no_install} ? undef : $name) => sub {
     unquote_sub($quoted_info->[4]);
@@ -104,11 +117,16 @@ sub unquote_sub {
     $make_sub .= "}\n1;\n";
     $ENV{SUB_QUOTE_DEBUG} && warn $make_sub;
     {
-      local $@;
       no strict 'refs';
       local *{$name} if $name;
-      unless (_clean_eval $make_sub, \%captures) {
-        die "Eval went very, very wrong:\n\n${make_sub}\n\n$@";
+      my ($success, $e);
+      {
+        local $@;
+        $success = _clean_eval($make_sub, \%captures);
+        $e = $@;
+      }
+      unless ($success) {
+        die "Eval went very, very wrong:\n\n${make_sub}\n\n$e";
       }
     }
   }
@@ -121,6 +139,7 @@ sub CLONE {
 }
 
 1;
+__END__
 
 =head1 NAME
 
@@ -265,19 +284,14 @@ It might turn up in the intended context as follows:
 Which will obviously return from foo, when all you meant to do was return from
 the code context in quote_sub and proceed with running important code b.
 
-=head2 strictures
+=head2 pragmas
 
-Sub::Quote compiles quoted subs in an environment where C<< use strictures >>
-is in effect. L<strictures> enables L<strict> and FATAL L<warnings>.
-
-The following dies I<< Use of uninitialized value in print... >>
-
- no warnings;
- quote_sub 'Silly::kitty', q{ print undef };
-
-If you need to disable parts of strictures, do it within the quoted sub:
-
- quote_sub 'Silly::kitty', q{ no warnings; print undef };
+C<Sub::Quote> preserves the environment of the code creating the
+quoted subs.  This includes the package, strict, warnings, and any
+other lexical pragmas.  This is done by prefixing the code with a
+block that sets up a matching environment.  When inlining C<Sub::Quote>
+subs, care should be taken that user pragmas won't effect the rest
+of the code.
 
 =head1 SUPPORT
 
@@ -290,3 +304,5 @@ See L<Moo> for authors.
 =head1 COPYRIGHT AND LICENSE
 
 See L<Moo> for the copyright and license.
+
+=cut

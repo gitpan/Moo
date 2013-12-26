@@ -16,6 +16,10 @@ BEGIN {
       &&
     (eval { Class::XSAccessor->VERSION('1.07') })
   ;
+  our $CAN_HAZ_XS_PRED =
+    $CAN_HAZ_XS &&
+    (eval { Class::XSAccessor->VERSION('1.17') })
+  ;
 }
 
 sub _SIGDIE
@@ -24,9 +28,9 @@ sub _SIGDIE
   my $sigdie = $OrigSigDie && $OrigSigDie != \&_SIGDIE
     ? $OrigSigDie
     : sub { die $_[0] };
-  
+
   return $sigdie->(@_) if ref($_[0]);
-  
+
   my $attr_desc = _attr_desc(@$CurrentAttribute{qw(name init_arg)});
   $sigdie->("$CurrentAttribute->{step} for $attr_desc failed: $_[0]");
 }
@@ -158,10 +162,16 @@ sub generate_method {
   if (my $pred = $spec->{predicate}) {
     _die_overwrite($into, $pred, 'a predicate')
       if !$spec->{allow_overwrite} && *{_getglob("${into}::${pred}")}{CODE};
-    $methods{$pred} =
-      quote_sub "${into}::${pred}" =>
-        '    '.$self->_generate_simple_has('$_[0]', $name, $spec)."\n"
-      ;
+    if (our $CAN_HAZ_XS && our $CAN_HAZ_XS_PRED) {
+      $methods{$pred} = $self->_generate_xs(
+        exists_predicates => $into, $pred, $name, $spec
+      );
+    } else {
+      $methods{$pred} =
+        quote_sub "${into}::${pred}" =>
+          '    '.$self->_generate_simple_has('$_[0]', $name, $spec)."\n"
+        ;
+    }
   }
   if (my $pred = $spec->{builder_sub}) {
     _install_coderef( "${into}::$spec->{builder}" => $spec->{builder_sub} );
@@ -170,7 +180,7 @@ sub generate_method {
     _die_overwrite($into, $cl, 'a clearer')
       if !$spec->{allow_overwrite} && *{_getglob("${into}::${cl}")}{CODE};
     $methods{$cl} =
-      quote_sub "${into}::${cl}" => 
+      quote_sub "${into}::${cl}" =>
         $self->_generate_simple_clear('$_[0]', $name, $spec)."\n"
       ;
   }
@@ -183,7 +193,7 @@ sub generate_method {
         map [ $_ => ref($hspec->{$_}) ? @{$hspec->{$_}} : $hspec->{$_} ],
           keys %$hspec;
       } elsif (!ref($hspec)) {
-        map [ $_ => $_ ], use_module('Role::Tiny')->methods_provided_by(use_module($hspec))
+        map [ $_ => $_ ], use_module('Moo::Role')->methods_provided_by(use_module($hspec))
       } else {
         die "You gave me a handles of ${hspec} and I have no idea why";
       }
@@ -339,7 +349,7 @@ sub _generate_set {
       $code = "do { my \$self = shift;\n";
     }
     if ($isa_check) {
-      $code .= 
+      $code .=
         "        ".$self->_generate_isa_check($name, $value_store, $isa_check).";\n";
     }
     my $simple = $self->_generate_simple_set('$self', $name, $spec, $value_store);
@@ -378,7 +388,7 @@ sub _generate_coerce {
     $self->_generate_call_code($name, 'coerce', "${value}", $coerce)
   );
 }
- 
+
 sub generate_trigger {
   my $self = shift;
   $self->{captures} = {};
@@ -433,7 +443,7 @@ sub _generate_call_code {
     }
     my $code = $quoted->[1];
     if (my $captures = $quoted->[2]) {
-      my $cap_name = qq{\$${type}_captures_for_${name}};
+      my $cap_name = qq{\$${type}_captures_for_}.$self->_sanitize_name($name);
       $self->{captures}->{$cap_name} = \$captures;
       Sub::Quote::inlinify(
         $code, $values, Sub::Quote::capture_unroll($cap_name, $captures, 6), $local
@@ -442,10 +452,16 @@ sub _generate_call_code {
       Sub::Quote::inlinify($code, $values, undef, $local);
     }
   } else {
-    my $cap_name = qq{\$${type}_for_${name}};
+    my $cap_name = qq{\$${type}_for_}.$self->_sanitize_name($name);
     $self->{captures}->{$cap_name} = \$sub;
     "${cap_name}->(${values})";
   }
+}
+
+sub _sanitize_name {
+  my ($self, $name) = @_;
+  $name =~ s/([_\W])/sprintf('_%x', ord($1))/ge;
+  $name;
 }
 
 sub generate_populate_set {
@@ -462,7 +478,7 @@ sub _generate_populate_set {
     my $get_default = $self->_generate_get_default(
                         '$new', $name, $spec
                       );
-    my $get_value = 
+    my $get_value =
       defined($spec->{init_arg})
         ? "(\n${get_indent}  ${test}\n${get_indent}   ? ${source}\n${get_indent}   : "
             .$get_default
