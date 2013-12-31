@@ -33,6 +33,6 @@ resources:
   bugtracker: https://rt.cpan.org/Public/Dist/Display.html?Name=Moo
   license: http://dev.perl.org/licenses/
   repository: https://github.com/moose/Moo.git
-version: 1.004001
+version: 1.004002
 x_breaks:
   HTML::Restrict: 2.1.5

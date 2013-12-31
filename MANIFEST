@@ -124,6 +124,7 @@ xt/super-jenga.t
 xt/test-my-dependents.t
 xt/type-inflate-coercion.t
 xt/type-inflate-threads.t
+xt/type-inflate-type-tiny.t
 xt/type-inflate.t
 xt/withautoclean.t
 META.yml                                 Module YAML meta-data (added by MakeMaker)
