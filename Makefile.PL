@@ -1,10 +1,6 @@
 use strict;
 use warnings FATAL => 'all';
-use 5.008001;
-use ExtUtils::MakeMaker;
-
-check_conflicts();
-(do 'maint/Makefile.PL.include' or die $@) unless -f 'META.yml';
+use 5.006;
 
 my %META = (
   name => 'Moo',
@@ -12,31 +8,35 @@ my %META = (
   prereqs => {
     configure => { requires => {
       'ExtUtils::MakeMaker'   => 0,
-      'Dist::CheckConflicts'  => '0.02',
     } },
     build => { requires => {
     } },
-    test => { requires => {
-      'Test::More'  => 0.94,
-      'Test::Fatal' => 0.003,
-    } },
-    runtime => { requires => {
-      'perl'                      => 5.008001,
-      'Class::Method::Modifiers'  => 1.10,  # for RT#80194
-      'strictures'                => 1.004003,
-      'Module::Runtime'           => 0.012, # for RT#74789
-      'Role::Tiny'                => 1.003002,
-      'Devel::GlobalDestruction'  => 0.11,  # for RT#78617
-      'Dist::CheckConflicts'      => 0.02,
-      'Import::Into'              => 1.002,
-      ($] >= 5.010 ? () : ('MRO::Compat' => 0)),
-    } },
+    test => {
+      requires => {
+        'Test::More'  => 0.94,
+        'Test::Fatal' => 0.003,
+      },
+      recommends => {
+        'CPAN::Meta::Requirements' => 0,
+      },
+    },
+    runtime => {
+      requires => {
+        'Class::Method::Modifiers'  => 1.10,  # for RT#80194
+        'strictures'                => 1.004003,
+        'Module::Runtime'           => 0.012, # for RT#74789
+        'Role::Tiny'                => 1.003003,
+        'Devel::GlobalDestruction'  => 0.11,  # for RT#78617
+        'Import::Into'              => 1.002,
+        'Scalar::Util'              => 0,
+      },
+      recommends => {
+        'Class::XSAccessor'         => 1.18,
+      },
+    },
     develop   => {
       requires => { map { $_ => 0 } qw(
-        Class::XSAccessor
         indirect multidimensional bareword::filehandles
-      ) },
-      recommends => { map { $_ => 0 } qw(
         Moose Mouse namespace::clean namespace::autoclean
         MooseX::Types::Common::Numeric
         Type::Tiny
@@ -59,92 +59,56 @@ my %META = (
   no_index => {
     directory => [ 't', 'xt' ]
   },
-  Moo::Conflicts->can('conflicts') ? (
-    x_breaks => { Moo::Conflicts->conflicts }
-  ) : (),
+  x_breaks => { # add these entries to t/zzz-check-breaks.t
+    'HTML::Restrict' => '== 2.1.5',
+  },
+  x_authority => 'cpan:MSTROUT',
 );
 
 my %MM_ARGS = (
-  EXE_FILES => [
-    'bin/moo-outdated',
-  ],
+  PREREQ_PM => {
+    ($] >= 5.008 ? () : ('Task::Weaken' => 0)),
+    ($] >= 5.010 ? () : ('MRO::Compat' => 0)),
+  },
+  realclean => { FILES => 'Distar/' },
 );
 
-
+##############################################################################
+require ExtUtils::MakeMaker;
+(do 'maint/Makefile.PL.include' or die $@) unless -f 'META.yml';
 
 # have to do this since old EUMM dev releases miss the eval $VERSION line
-my $mmver = eval $ExtUtils::MakeMaker::VERSION;
-my $mymeta_works      = $mmver >= 6.57_07;
-my $mymeta            = $mmver >= 6.57_02;
-my $has_test_requires = $mmver >= 6.63_03;
+my $eumm_version  = eval $ExtUtils::MakeMaker::VERSION;
+my $mymeta        = $eumm_version >= 6.57_02;
+my $mymeta_broken = $mymeta && $eumm_version < 6.57_07;
 
-my %configure_deps = %{$META{prereqs}{configure}{requires}};
-my %build_deps     = %{$META{prereqs}{build}{requires}};
-my %test_deps      = %{$META{prereqs}{test}{requires}};
-my %run_deps       = %{$META{prereqs}{runtime}{requires}};
+($MM_ARGS{NAME} = $META{name}) =~ s/-/::/g;
+($MM_ARGS{VERSION_FROM} = "lib/$MM_ARGS{NAME}.pm") =~ s{::}{/}g;
+$MM_ARGS{LICENSE} = $META{license}
+  if $eumm_version >= 6.30;
+$MM_ARGS{NO_MYMETA} = 1
+  if $mymeta_broken;
+$MM_ARGS{META_ADD} = { 'meta-spec' => { version => 2 }, %META }
+  unless -f 'META.yml';
 
-my $min_perl_version = delete $run_deps{perl};
-
-if (not $has_test_requires) {
-  %build_deps = (%build_deps, %test_deps);
-  %test_deps = ();
-}
-if (not $mymeta_works) {
-  %run_deps = (%run_deps, %build_deps);
-  %build_deps = ();
-}
-
-# $META{name} is the dist name, EUMM needs the module name and file
-(my $module_name = $META{name}) =~ s/-/::/g;
-(my $module_file = "lib/$module_name.pm") =~ s{::}{/}g;
-
-WriteMakefile(
-  NAME => $module_name,
-  VERSION_FROM => $module_file,
-  LICENSE => $META{license},
-
-  $min_perl_version     ? ( MIN_PERL_VERSION    => $min_perl_version ) : (),
-  keys %configure_deps  ? ( CONFIGURE_REQUIRES  => \%configure_deps ) : (),
-  keys %build_deps      ? ( BUILD_REQUIRES      => \%build_deps ) : (),
-  keys %test_deps       ? ( TEST_REQUIRES       => \%test_deps ) : (),
-  keys %run_deps        ? ( PREREQ_PM           => \%run_deps ) : (),
-
-  ($mymeta && !$mymeta_works ? (NO_MYMETA => 1) : ()),
-  -f 'META.yml' ? () : (META_ADD => { 'meta-spec' => { version => 2 }, %META }),
-
-  %MM_ARGS,
-);
-
-# copied from Moose-2.0801/Makefile.PL
-sub check_conflicts {
-    if ( eval { require 'lib/Moo/Conflicts.pm'; 1; } ) {
-        if ( eval { Moo::Conflicts->check_conflicts; 1 } ) {
-            return;
-        }
-        else {
-            my $err = $@;
-            $err =~ s/^/    /mg;
-            warn "***\n$err***\n";
-        }
-    }
-    else {
-        print <<'EOF';
-***
-    Your toolchain doesn't support configure_requires, so
-    Dist::CheckConflicts hasn't been installed yet. You should check for
-    conflicting modules manually using the 'moo-outdated' script that is
-    installed with this distribution once the installation finishes.
-***
-EOF
-    }
-
-    return if $ENV{AUTOMATED_TESTING} || $ENV{NONINTERACTIVE_TESTING};
-
-    # More or less copied from Module::Build
-    return if $ENV{PERL_MM_USE_DEFAULT};
-    return unless -t STDIN && ( -t STDOUT || !( -f STDOUT || -c STDOUT ) );
-    return unless -f 'META.yml';
-
-    sleep 4;
+for (qw(configure build test runtime)) {
+  my $key = $_ eq 'runtime' ? 'PREREQ_PM' : uc $_.'_REQUIRES';
+  my $r = $MM_ARGS{$key} = {
+    %{$META{prereqs}{$_}{requires}},
+    %{delete $MM_ARGS{$key} || {}},
+  };
+  defined $r->{$_} or delete $r->{$_} for keys %$r;
 }
 
+$MM_ARGS{MIN_PERL_VERSION} = delete $MM_ARGS{PREREQ_PM}{perl} || 0;
+
+delete $MM_ARGS{MIN_PERL_VERSION}
+  if $eumm_version < 6.47_01;
+$MM_ARGS{BUILD_REQUIRES} = {%{$MM_ARGS{BUILD_REQUIRES}}, %{delete $MM_ARGS{TEST_REQUIRES}}}
+  if $eumm_version < 6.63_03;
+$MM_ARGS{PREREQ_PM} = {%{$MM_ARGS{PREREQ_PM}}, %{delete $MM_ARGS{BUILD_REQUIRES}}}
+  if $eumm_version < 6.55_01;
+delete $MM_ARGS{CONFIGURE_REQUIRES}
+  if $eumm_version < 6.51_03;
+
+ExtUtils::MakeMaker::WriteMakefile(%MM_ARGS);

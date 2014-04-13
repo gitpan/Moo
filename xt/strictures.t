@@ -1,14 +1,15 @@
 use strictures 1;
 use Test::More;
 use Test::Fatal;
+use File::Temp;
+
+delete $ENV{PERL_STRICTURES_EXTRA}; # ensure the env doesn't break the tests
+$strictures::Smells_Like_VCS = 1;
 
 # make sure these are really loaded
 no indirect 'fatal';
 no multidimensional;
 no bareword::filehandles;
-
-plan skip_all => "test must be run from git checkout"
-  unless -e '.git';
 
 our %test_hash;
 

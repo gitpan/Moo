@@ -74,4 +74,51 @@ undefer_all();
 is( $made{'Foo::one_all'}, \&Foo::one_all, 'one_all made by undefer_all' );
 is( $made{'Foo::two_all'}, \&Foo::two_all, 'two_all made by undefer_all' );
 
+{
+  my $foo = defer_sub undef, sub { sub { 'foo' } };
+  my $foo_string = "$foo";
+  undef $foo;
+
+  is Sub::Defer::defer_info($foo_string), undef,
+    "deferred subs don't leak";
+
+  Sub::Defer->CLONE;
+  ok !exists $Sub::Defer::DEFERRED{$foo_string},
+    'CLONE cleans out expired entries';
+}
+
+{
+  my $foo = defer_sub undef, sub { sub { 'foo' } };
+  my $foo_string = "$foo";
+  Sub::Defer->CLONE;
+  undef $foo;
+
+  is Sub::Defer::defer_info($foo_string), undef,
+    "CLONE doesn't strengthen refs";
+}
+
+{
+  my $foo = defer_sub undef, sub { sub { 'foo' } };
+  my $foo_string = "$foo";
+  my $foo_info = Sub::Defer::defer_info($foo_string);
+  undef $foo;
+
+  is exception { Sub::Defer->CLONE }, undef,
+    'CLONE works when quoted info saved externally';
+  ok exists $Sub::Defer::DEFERRED{$foo_string},
+    'CLONE keeps entries that had info saved externally';
+}
+
+{
+  my $foo = defer_sub undef, sub { sub { 'foo' } };
+  my $foo_string = "$foo";
+  my $foo_info = $Sub::Defer::DEFERRED{$foo_string};
+  undef $foo;
+
+  is exception { Sub::Defer->CLONE }, undef,
+    'CLONE works when quoted info kept alive externally';
+  ok !exists $Sub::Defer::DEFERRED{$foo_string},
+    'CLONE removes expired entries that were kept alive externally';
+}
+
 done_testing;

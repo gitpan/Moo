@@ -1,4 +1,3 @@
-bin/moo-outdated
 Changes
 lib/Method/Generate/Accessor.pm
 lib/Method/Generate/BuildAll.pm
@@ -8,7 +7,6 @@ lib/Method/Inliner.pm
 lib/Moo.pm
 lib/Moo/_mro.pm
 lib/Moo/_Utils.pm
-lib/Moo/Conflicts.pm
 lib/Moo/HandleMoose.pm
 lib/Moo/HandleMoose/_TypeMap.pm
 lib/Moo/HandleMoose/FakeMetaClass.pm
@@ -21,8 +19,6 @@ lib/Sub/Quote.pm
 maint/bump-version
 maint/fulltest
 maint/Makefile.PL.include
-maint/travis-install
-maint/travis-perlbrew
 Makefile.PL
 MANIFEST			This list of files
 t/accessor-coerce.t
@@ -64,6 +60,7 @@ t/lib/ClassicObject.pm
 t/lib/ClobberUnderscore.pm
 t/lib/ComplexWriter.pm
 t/lib/ExtRobot.pm
+t/lib/INCModule.pm
 t/lib/MooObjectWithDelegate.pm
 t/lib/sub_class.pm
 t/lib/UnderscoreClass.pm
@@ -75,9 +72,13 @@ t/method-generate-accessor.t
 t/method-generate-constructor.t
 t/modify_lazy_handlers.t
 t/moo-accessors.t
+t/moo-c3.t
+t/moo-object.t
+t/moo-utils.t
 t/moo.t
 t/mutual-requires.t
 t/no-moo.t
+t/non-moo-extends-c3.t
 t/non-moo-extends.t
 t/not-both.t
 t/overloaded-coderefs.t
@@ -89,6 +90,8 @@ t/sub-quote.t
 t/subconstructor.t
 t/undef-bug.t
 t/use-after-no.t
+t/zzz-check-breaks.t
+xt/global-destruct-jenga-helper.pl
 xt/global-destruct-jenga.t
 xt/handle_moose.t
 xt/implicit-moose-types.t
@@ -119,6 +122,7 @@ xt/moose-method-modifiers.t
 xt/moose-override-attribute-from-moo-role.t
 xt/moose-override-attribute-with-plus-syntax.t
 xt/more-jenga.t
+xt/role-tiny-inflate.t
 xt/strictures.t
 xt/super-jenga.t
 xt/test-my-dependents.t

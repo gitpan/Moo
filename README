@@ -418,7 +418,7 @@ IMPORTED SUBROUTINES
 
       If you set this to just 1, the clearer is automatically named
       "clear_${attr_name}" if your attribute's name does not start with an
-      underscore, or <_clear_${attr_name_without_the_underscore}> if it
+      underscore, or "_clear_${attr_name_without_the_underscore}" if it
       does. This feature comes from MooseX::AttributeShortcuts.
 
     * "lazy"

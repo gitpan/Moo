@@ -1,5 +1,25 @@
 Revision history for Moo
 
+1.004_003 - 2014-04-13
+  - always maintain source of quoted subs for the lifetime of the sub
+  - fix Sub::Quote and Sub::Defer leaking memory
+  - Class::XSAccessor is now listed as a recommended prerequisite
+  - fix generating a subclass with roles when using a non-standard accessor
+  - use alternate quoting routine, which is faster and saves memory by not
+    loading B.pm
+  - fix default of undef
+  - fix inheriting from a class with a prototype on new
+  - use ->is_role internally to check if a package is a role
+  - minimise Role::Tiny coupling outside Moo::Role
+  - fix calling parent constructor when C3 multiple inheritance is in use
+    (such as when combining with DBIx::Class)
+  - return true from Moo::Role->is_role for all loaded Moose roles
+  - improved test coverage
+  - fix strictures author test when PERL_STRICTURES_EXTRA is set
+  - remove Dist::CheckConflicts prerequisite and replace with a test to report
+    known broken downstream modules
+  - fix x_breaks metadata
+
 1.004002 - 2013-12-31
   - fix type inflation in threads when types are inserted by manually
     stringifying the type first (like Type::Tiny)
@@ -141,7 +161,7 @@ Revision history for Moo
   - clean up doc language and expand on Moo and Moose
   - error prefixes for isa and coerce exceptions
   - unmark Moo and Moose as experimental since it's relatively solid now
-  - convert isa and coerce info from external role attributes 
+  - convert isa and coerce info from external role attributes
   - clear method cache after metaclass generation to fix autoclean bug
 
 0.091014 - 2012-07-16

@@ -43,7 +43,7 @@ BEGIN {
 
   sub default_construction_string { '[]' }
 
-  sub MooX::ArrayRef::import { 
+  sub MooX::ArrayRef::import {
     Moo::Role->apply_roles_to_object(
       Moo->_accessor_maker_for(scalar caller),
       'Method::Generate::Accessor::Role::ArrayRefInstance'
@@ -100,5 +100,11 @@ is_deeply([ @$o ], [ 1, 2, 3, 4 ], 'Subclass object ok');
 $o = ArrayTest3->new(one => 1, two => 2, three => 3, four => 4);
 
 is_deeply([ @$o ], [ 1, 2, 3, 4 ], 'Subclass object w/role');
+
+my $c = Moo::Role->create_class_with_roles('ArrayTest1', 'ArrayTestRole');
+
+$o = $c->new(one => 1, two => 2, three => 3, four => 4);
+
+is_deeply([ @$o ], [ 1, 2, 3, 4 ], 'Generated subclass object w/role');
 
 done_testing;
