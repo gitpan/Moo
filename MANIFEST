@@ -107,6 +107,7 @@ xt/moo-consume-moose-role-coerce.t
 xt/moo-consume-moose-role-multiple.t
 xt/moo-consume-mouse-role-coerce.t
 xt/moo-does-moose-role.t
+xt/moo-inflate.t
 xt/moo-object-meta-can.t
 xt/moo-role-types.t
 xt/moo-roles-into-moose-class-attr-override-with-autoclean.t
@@ -117,6 +118,8 @@ xt/moose-autoclean-lazy-attr-builders.t
 xt/moose-consume-moo-role-after-consumed-by-moo.t
 xt/moose-consume-moo-role-no-moo-loaded.t
 xt/moose-does-moo-role.t
+xt/moose-extend-moo.t
+xt/moose-inflate-error-recurse.t
 xt/moose-lazy.t
 xt/moose-method-modifiers.t
 xt/moose-override-attribute-from-moo-role.t

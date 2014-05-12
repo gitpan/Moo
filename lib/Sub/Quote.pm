@@ -8,7 +8,7 @@ use Sub::Defer;
 use Scalar::Util qw(weaken);
 use base qw(Exporter);
 
-our $VERSION = '1.004_003';
+our $VERSION = '1.004_004';
 $VERSION = eval $VERSION;
 
 our @EXPORT = qw(quote_sub unquote_sub quoted_from_sub);
@@ -38,7 +38,7 @@ sub inlinify {
   if ($code =~ s/^(\s*package\s+([a-zA-Z0-9:]+);)//) {
     $do .= $1;
   }
-  if ($code =~ s{(\A\s*|# END quote_sub PRELUDE\n\s*)(^\s*)(my\s*\(([^)]+)\)\s*=\s*\@_;)$}{
+  if ($code =~ s{(\A\s*|\A# BEGIN quote_sub PRELUDE\n.*?# END quote_sub PRELUDE\n\s*)(^\s*)(my\s*\(([^)]+)\)\s*=\s*\@_;)$}{
     my ($pre, $indent, $assign, $code_args) = ($1, $2, $3, $4);
     if ($code_args eq $args) {
       $pre . $indent . ($local ? 'local ' : '').'@_ = ('.$args.");\n"
@@ -73,7 +73,8 @@ sub quote_sub {
   my $name = $_[0];
   my ($package, $hints, $bitmask, $hintshash) = (caller(0))[0,8,9,10];
   my $context
-    ="package $package;\n"
+    ="# BEGIN quote_sub PRELUDE\n"
+    ."package $package;\n"
     ."BEGIN {\n"
     ."  \$^H = ".quotify($hints).";\n"
     ."  \${^WARNING_BITS} = ".quotify($bitmask).";\n"
@@ -100,21 +101,27 @@ sub quote_sub {
 
 sub quoted_from_sub {
   my ($sub) = @_;
-  my $quoted = $QUOTED{$sub||''} || return undef;
-  [ @{$quoted}[0 .. 2], ${ $quoted->[3] || \undef }, $quoted->[4] ]
+  my $quoted_info = $QUOTED{$sub||''} or return undef;
+  my ($name, $code, $captured, $unquoted, $deferred) = @{$quoted_info};
+  $unquoted &&= $$unquoted;
+  if (($deferred && $deferred eq $sub)
+      || ($unquoted && $unquoted eq $sub)) {
+    return [ $name, $code, $captured, $unquoted, $deferred ];
+  }
+  return undef;
 }
 
 sub unquote_sub {
   my ($sub) = @_;
   my $quoted = $QUOTED{$sub} or return undef;
-  my $unquoted = $quoted->[3] && ${$quoted->[3]};
-  unless ($unquoted) {
+  my $unquoted = $quoted->[3];
+  unless ($unquoted && $$unquoted) {
     my ($name, $code, $captures) = @$quoted;
 
     my $make_sub = "{\n";
 
     my %captures = $captures ? %$captures : ();
-    $captures{'$_UNQUOTED'} = \\$unquoted;
+    $captures{'$_UNQUOTED'} = \$unquoted;
     $captures{'$_QUOTED'} = \$quoted;
     $make_sub .= capture_unroll("\$_[1]", \%captures, 2);
 
@@ -127,6 +134,7 @@ sub unquote_sub {
         : "  \$\$_UNQUOTED = sub {\n"
     );
     $make_sub .= "  \$_QUOTED if 0;\n";
+    $make_sub .= "  \$_UNQUOTED if 0;\n";
     $make_sub .= $code;
     $make_sub .= "  }".($name ? '' : ';')."\n";
     if ($name) {
@@ -146,11 +154,10 @@ sub unquote_sub {
       unless ($success) {
         die "Eval went very, very wrong:\n\n${make_sub}\n\n$e";
       }
-      ${$quoted->[3]} = $unquoted;
-      weaken($QUOTED{$unquoted} = $quoted);
+      weaken($QUOTED{$$unquoted} = $quoted);
     }
   }
-  $unquoted;
+  $$unquoted;
 }
 
 sub CLONE {

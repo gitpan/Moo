@@ -2,10 +2,9 @@ package Moo;
 
 use strictures 1;
 use Moo::_Utils;
-use Sub::Defer ();
 use Import::Into;
 
-our $VERSION = '1.004_003';
+our $VERSION = '1.004_004';
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -125,6 +124,7 @@ sub _accessor_maker_for {
   $MAKERS{$target}{accessor} ||= do {
     my $maker_class = do {
       if (my $m = do {
+            require Sub::Defer;
             if (my $defer_target =
                   (Sub::Defer::defer_info($target->can('new'))||[])->[0]
               ) {
@@ -149,38 +149,38 @@ sub _constructor_maker_for {
   return unless $MAKERS{$target};
   $MAKERS{$target}{constructor} ||= do {
     require Method::Generate::Constructor;
+    require Sub::Defer;
+    my ($moo_constructor, $con);
 
-    my @parents = reverse @{_get_linear_isa($target)};
-    pop @parents;
-
-    my $con;
-    my %specs =
-      map { $con = $_; %{$_->all_attribute_specs} }
-      map $_->{constructor} || (),
-      map $MAKERS{$_} || (),
-      @parents;
-
-    my $moo_new = Moo::Object->can('new');
-    my $non_moo =
-      grep $_ != $moo_new,
-      map $_ && *$_{CODE} || (),
-      map _getstash($_)->{new},
-      grep !$MAKERS{$_},
-      @parents;
-
+    my $t_new = $target->can('new');
+    if ($t_new) {
+      if ($t_new == Moo::Object->can('new')) {
+        $moo_constructor = 1;
+      }
+      elsif (my $defer_target = (Sub::Defer::defer_info($t_new)||[])->[0]) {
+        my ($pkg) = ($defer_target =~ /^(.*)::[^:]+$/);
+        if ($MAKERS{$pkg}) {
+          $moo_constructor = 1;
+          $con = $MAKERS{$pkg}{constructor};
+        }
+      }
+    }
+    else {
+      $moo_constructor = 1; # no other constructor, make a Moo one
+    }
     ($con ? ref($con) : 'Method::Generate::Constructor')
       ->new(
         package => $target,
         accessor_generator => $class->_accessor_maker_for($target),
-        $non_moo ? (
+        $moo_constructor ? (
+          $con ? (construction_string => $con->construction_string) : ()
+        ) : (
           construction_builder => sub {
-            '$class->'.$target.'::SUPER::new('
+            '$class->next::method('
               .($target->can('FOREIGNBUILDARGS') ?
                 '$class->FOREIGNBUILDARGS(@_)' : '@_')
               .')'
           },
-        ) : (
-          $con ? (construction_string => $con->construction_string) : ()
         ),
         subconstructor_handler => (
           '      if ($Moo::MAKERS{$class}) {'."\n"
@@ -195,7 +195,7 @@ sub _constructor_maker_for {
         ),
       )
       ->install_delayed
-      ->register_attribute_specs(%specs)
+      ->register_attribute_specs(%{$con?$con->all_attribute_specs:{}})
   }
 }
 

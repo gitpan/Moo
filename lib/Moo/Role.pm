@@ -6,7 +6,7 @@ use Role::Tiny ();
 use base qw(Role::Tiny);
 use Import::Into;
 
-our $VERSION = '1.004_003';
+our $VERSION = '1.004_004';
 $VERSION = eval $VERSION;
 
 require Moo::sification;
@@ -137,6 +137,7 @@ sub _inhale_if_moose {
       and (
         $INC{"Moose.pm"}
         and $meta = Class::MOP::class_of($role)
+        and ref $meta ne 'Moo::HandleMoose::FakeMetaClass'
         and $meta->isa('Moose::Meta::Role')
       )
       or (

@@ -8,7 +8,7 @@ build_requires:
 configure_requires:
   ExtUtils::MakeMaker: '0'
 dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 6.9, CPAN::Meta::Converter version 2.140640'
+generated_by: 'ExtUtils::MakeMaker version 6.96, CPAN::Meta::Converter version 2.140640'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -20,6 +20,7 @@ no_index:
     - xt
 recommends:
   Class::XSAccessor: '1.18'
+  Sub::Name: '0'
 requires:
   Class::Method::Modifiers: '1.1'
   Devel::GlobalDestruction: '0.11'
@@ -33,7 +34,7 @@ resources:
   bugtracker: https://rt.cpan.org/Public/Dist/Display.html?Name=Moo
   license: http://dev.perl.org/licenses/
   repository: https://github.com/moose/Moo.git
-version: 1.004_003
+version: 1.004_004
 x_authority: cpan:MSTROUT
 x_breaks:
   HTML::Restrict: '== 2.1.5'
