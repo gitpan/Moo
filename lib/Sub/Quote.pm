@@ -7,8 +7,12 @@ sub _clean_eval { eval $_[0] }
 use Sub::Defer;
 use Scalar::Util qw(weaken);
 use base qw(Exporter);
+use B ();
+BEGIN {
+  *_HAVE_PERLSTRING = defined &B::perlstring ? sub(){1} : sub(){0};
+}
 
-our $VERSION = '1.004005';
+our $VERSION = '1.004006';
 $VERSION = eval $VERSION;
 
 our @EXPORT = qw(quote_sub unquote_sub quoted_from_sub);
@@ -17,7 +21,9 @@ our @EXPORT_OK = qw(quotify capture_unroll inlinify);
 our %QUOTED;
 
 sub quotify {
-  defined $_[0] ? qq["\Q$_[0]\E"] : 'undef()';
+  ! defined $_[0]     ? 'undef()'
+  : _HAVE_PERLSTRING  ? B::perlstring($_[0])
+  : qq["\Q$_[0]\E"];
 }
 
 sub capture_unroll {

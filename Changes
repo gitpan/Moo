@@ -1,5 +1,9 @@
 Revision history for Moo
 
+1.004006 - 2014-05-27
+  - fix quotify for characters in the \x80-\xFF range when used under the utf8
+    pragma.  Also fixes some cases of constructor generation with the pragma.
+
 1.004005 - 2014-05-23
   - releasing 1.004_004 as stable
 

@@ -82,7 +82,7 @@
       },
       "x_IRC" : "irc://irc.perl.org/#moose"
    },
-   "version" : "1.004005",
+   "version" : "1.004006",
    "x_authority" : "cpan:MSTROUT",
    "x_breaks" : {
       "HTML::Restrict" : "== 2.1.5"

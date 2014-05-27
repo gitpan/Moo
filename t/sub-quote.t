@@ -154,4 +154,34 @@ is exception { quote_sub(q{ in_main(); })->(); }, undef, 'context preserved in q
     'unquoted sub still included in quote info';
 }
 
+use Data::Dumper;
+my $dump = sub {
+  local $Data::Dumper::Terse = 1;
+  my $d = Data::Dumper::Dumper($_[0]);
+  $d =~ s/\s+$//;
+  $d;
+};
+
+my $have_utf8 = eval { require utf8; 1 };
+my @strings   = (0, 1, "\x00", "a", "\xFC");
+push @strings, eval q["\x{1F4A9}"]
+  if $have_utf8;
+my $eval = sub { eval Sub::Quote::quotify($_[0])};
+
+my @failed = grep { my $o = $eval->($_); !defined $o || $o ne $_ } @strings;
+
+ok !@failed, "evaling quotify returns same value for all strings"
+  or diag "Failed strings: " . join(' ', map { $dump->($_) } @failed);
+
+SKIP: {
+  skip 1, "utf8 pragma not available"
+    if !$have_utf8;
+  my $eval_utf8 = eval 'sub { use utf8; eval Sub::Quote::quotify($_[0]) }';
+
+  my @failed_utf8 = grep { my $o = $eval_utf8 ->($_); !defined $o || $o ne $_ }
+    @strings;
+  ok !@failed_utf8, "evaling quotify under utf8 returns same value for all strings"
+    or diag "Failed strings: " . join(' ', map { $dump->($_) } @failed_utf8);
+}
+
 done_testing;
