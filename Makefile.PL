@@ -24,11 +24,12 @@ my %META = (
       requires => {
         'Class::Method::Modifiers'  => 1.10,  # for RT#80194
         'strictures'                => 1.004003,
-        'Module::Runtime'           => 0.012, # for RT#74789
+        'Module::Runtime'           => 0.014, # for RT#86394
         'Role::Tiny'                => 1.003003,
         'Devel::GlobalDestruction'  => 0.11,  # for RT#78617
         'Import::Into'              => 1.002,
         'Scalar::Util'              => 0,
+        'perl'                      => 5.006,
       },
       recommends => {
         'Class::XSAccessor'         => 1.18,
@@ -95,7 +96,7 @@ $MM_ARGS{META_ADD} = { 'meta-spec' => { version => 2 }, %META }
 for (qw(configure build test runtime)) {
   my $key = $_ eq 'runtime' ? 'PREREQ_PM' : uc $_.'_REQUIRES';
   my $r = $MM_ARGS{$key} = {
-    %{$META{prereqs}{$_}{requires}},
+    %{$META{prereqs}{$_}{requires} || {}},
     %{delete $MM_ARGS{$key} || {}},
   };
   defined $r->{$_} or delete $r->{$_} for keys %$r;

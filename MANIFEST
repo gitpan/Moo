@@ -38,6 +38,7 @@ t/buildall-subconstructor.t
 t/buildall.t
 t/buildargs-error.t
 t/buildargs.t
+t/coerce-1.t
 t/compose-non-role.t
 t/compose-roles.t
 t/demolish-basics.t
@@ -133,6 +134,7 @@ xt/type-inflate-coercion.t
 xt/type-inflate-threads.t
 xt/type-inflate-type-tiny.t
 xt/type-inflate.t
+xt/type-tiny-coerce.t
 xt/withautoclean.t
 META.yml                                 Module YAML meta-data (added by MakeMaker)
 META.json                                Module JSON meta-data (added by MakeMaker)

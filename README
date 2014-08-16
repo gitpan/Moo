@@ -89,9 +89,9 @@ MOO AND MOOSE
     to use them in Moose code without anybody ever noticing you aren't using
     Moose everywhere.
 
-    Moo will also create Moose type constraints for classes and roles, so
-    that "isa => 'MyClass'" and "isa => 'MyRole'" work the same as for Moose
-    classes and roles.
+    Moo will also create Moose type constraints for Moo classes and roles,
+    so that in Moose classes "isa => 'MyMooClass'" and "isa => 'MyMooRole'"
+    work the same as for Moose classes and roles.
 
     Extending a Moose class or consuming a Moose::Role will also work.
 
@@ -251,7 +251,7 @@ IMPORTED SUBROUTINES
 
     The options for "has" are as follows:
 
-    * is
+    * "is"
 
       required, may be "ro", "lazy", "rwp" or "rw".
 
@@ -276,7 +276,7 @@ IMPORTED SUBROUTINES
       "rw" generates a normal getter/setter by defaulting "accessor" to the
       name of the attribute.
 
-    * isa
+    * "isa"
 
       Takes a coderef which is meant to validate the attribute. Unlike
       Moose, Moo does not include a basic type system, so instead of doing
@@ -313,7 +313,7 @@ IMPORTED SUBROUTINES
       Moose::Meta::TypeConstraint object or something similar enough to it
       to make Moose happy is fine.
 
-    * coerce
+    * "coerce"
 
       Takes a coderef which is meant to coerce the attribute. The basic idea
       is to do something like the following:
@@ -330,7 +330,10 @@ IMPORTED SUBROUTINES
 
       Sub::Quote aware
 
-    * handles
+      If the "isa" option is a blessed object providing a "coerce" or
+      "coercion" method, then the "coerce" option may be set to just 1.
+
+    * "handles"
 
       Takes a string
 

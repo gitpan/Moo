@@ -25,16 +25,17 @@ requires:
   Class::Method::Modifiers: '1.1'
   Devel::GlobalDestruction: '0.11'
   Import::Into: '1.002'
-  Module::Runtime: '0.012'
+  Module::Runtime: '0.014'
   Role::Tiny: '1.003003'
   Scalar::Util: '0'
+  perl: '5.006'
   strictures: '1.004003'
 resources:
   IRC: irc://irc.perl.org/#moose
   bugtracker: https://rt.cpan.org/Public/Dist/Display.html?Name=Moo
   license: http://dev.perl.org/licenses/
   repository: https://github.com/moose/Moo.git
-version: '1.005000'
+version: '1.006000'
 x_authority: cpan:MSTROUT
 x_breaks:
   HTML::Restrict: '== 2.1.5'
