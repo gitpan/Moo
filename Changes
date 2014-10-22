@@ -1,5 +1,17 @@
 Revision history for Moo
 
+1.006001 - 2014-10-22
+  - Name the ->DOES method installed by Role::Tiny
+  - don't apply threading workarounds on non-threaded perls, even if module for
+    it is loaded by something
+  - avoid loading base.pm and just set @ISA manually
+  - fix some Pod links to Class::Method::Modifiers
+  - fix applying roles with multiple attributes with defaults to objects
+    (RT#99217)
+  - fix Moose inheriting from a Moo class that inherits from a non-M* class
+    when the Moose class is not made immutable
+  - fix ->does method on Moose child classes of Moo classes
+
 1.006000 - 2014-08-16
   - support coerce => 1 in attributes, taking the coercion from the isa option
     if it is an object that supports the coerce or coercion method.

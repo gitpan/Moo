@@ -469,19 +469,19 @@ IMPORTED SUBROUTINES
   before
      before foo => sub { ... };
 
-    See "before method(s) => sub { ... }" in Class::Method::Modifiers for
+    See "before method(s) => sub { ... };" in Class::Method::Modifiers for
     full documentation.
 
   around
      around foo => sub { ... };
 
-    See "around method(s) => sub { ... }" in Class::Method::Modifiers for
+    See "around method(s) => sub { ... };" in Class::Method::Modifiers for
     full documentation.
 
   after
      after foo => sub { ... };
 
-    See "after method(s) => sub { ... }" in Class::Method::Modifiers for
+    See "after method(s) => sub { ... };" in Class::Method::Modifiers for
     full documentation.
 
 SUB QUOTE AWARE

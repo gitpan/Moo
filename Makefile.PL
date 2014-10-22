@@ -25,11 +25,12 @@ my %META = (
         'Class::Method::Modifiers'  => 1.10,  # for RT#80194
         'strictures'                => 1.004003,
         'Module::Runtime'           => 0.014, # for RT#86394
-        'Role::Tiny'                => 1.003003,
+        'Role::Tiny'                => 1.003004,
         'Devel::GlobalDestruction'  => 0.11,  # for RT#78617
         'Import::Into'              => 1.002,
         'Scalar::Util'              => 0,
         'perl'                      => 5.006,
+        'Exporter'                  => 5.57,  # Import 'import'
       },
       recommends => {
         'Class::XSAccessor'         => 1.18,
@@ -75,7 +76,7 @@ my %MM_ARGS = (
   realclean => { FILES => 'Distar/' },
 );
 
-##############################################################################
+## BOILERPLATE ###############################################################
 require ExtUtils::MakeMaker;
 (do 'maint/Makefile.PL.include' or die $@) unless -f 'META.yml';
 
@@ -86,8 +87,10 @@ my $mymeta_broken = $mymeta && $eumm_version < 6.57_07;
 
 ($MM_ARGS{NAME} = $META{name}) =~ s/-/::/g;
 ($MM_ARGS{VERSION_FROM} = "lib/$MM_ARGS{NAME}.pm") =~ s{::}{/}g;
-$MM_ARGS{LICENSE} = $META{license}
-  if $eumm_version >= 6.30;
+$META{license} = [ $META{license} ]
+  if $META{license} && !ref $META{license};
+$MM_ARGS{LICENSE} = $META{license}[0]
+  if $META{license} && $eumm_version >= 6.30;
 $MM_ARGS{NO_MYMETA} = 1
   if $mymeta_broken;
 $MM_ARGS{META_ADD} = { 'meta-spec' => { version => 2 }, %META }
@@ -114,3 +117,4 @@ delete $MM_ARGS{CONFIGURE_REQUIRES}
   if $eumm_version < 6.51_03;
 
 ExtUtils::MakeMaker::WriteMakefile(%MM_ARGS);
+## END BOILERPLATE ###########################################################
